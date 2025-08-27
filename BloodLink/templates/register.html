@@ -1,0 +1,213 @@
+{% extends "base.html" %}
+
+{% block title %}Register as Donor - BloodLink{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8 col-md-10">
+        <div class="card shadow">
+            <div class="card-header bg-danger text-white text-center py-4">
+                <h3 class="mb-0">
+                    <i class="fas fa-user-plus me-2"></i>
+                    <span data-i18n="donor_registration">Donor Registration</span>
+                </h3>
+            </div>
+            <div class="card-body p-5">
+                <form method="POST" id="registerForm" onsubmit="return validateForm('registerForm')">
+                    <div class="row g-3">
+                        <!-- Full Name -->
+                        <div class="col-md-6">
+                            <div class="form-floating">
+                                <input type="text" class="form-control" id="name" name="name" placeholder="Full Name" required>
+                                <label for="name" data-i18n="full_name">Full Name</label>
+                            </div>
+                        </div>
+                        
+                        <!-- Age -->
+                        <div class="col-md-6">
+                            <div class="form-floating">
+                                <input type="number" class="form-control" id="age" name="age" placeholder="Age" min="18" max="65" required>
+                                <label for="age" data-i18n="age">Age</label>
+                            </div>
+                        </div>
+                        
+                        <!-- Gender -->
+                        <div class="col-md-6">
+                            <div class="form-floating">
+                                <select class="form-select" id="gender" name="gender" required>
+                                    <option value="">Choose...</option>
+                                    <option value="Male" data-i18n="male">Male</option>
+                                    <option value="Female" data-i18n="female">Female</option>
+                                    <option value="Other" data-i18n="other">Other</option>
+                                </select>
+                                <label for="gender" data-i18n="gender">Gender</label>
+                            </div>
+                        </div>
+                        
+                        <!-- Blood Group -->
+                        <div class="col-md-6">
+                            <div class="form-floating">
+                                <select class="form-select" id="blood_group" name="blood_group" required>
+                                    <option value="">Choose...</option>
+                                    <option value="A+">A+</option>
+                                    <option value="A-">A-</option>
+                                    <option value="B+">B+</option>
+                                    <option value="B-">B-</option>
+                                    <option value="AB+">AB+</option>
+                                    <option value="AB-">AB-</option>
+                                    <option value="O+">O+</option>
+                                    <option value="O-">O-</option>
+                                </select>
+                                <label for="blood_group" data-i18n="blood_group">Blood Group</label>
+                            </div>
+                        </div>
+                        
+                        <!-- City -->
+                        <div class="col-md-4">
+                            <div class="form-floating">
+                                <input type="text" class="form-control" id="city" name="city" placeholder="City" required>
+                                <label for="city" data-i18n="city">City</label>
+                            </div>
+                        </div>
+                        
+                        <!-- State -->
+                        <div class="col-md-4">
+                            <div class="form-floating">
+                                <input type="text" class="form-control" id="state" name="state" placeholder="State" required>
+                                <label for="state" data-i18n="state">State</label>
+                            </div>
+                        </div>
+                        
+                        <!-- Pincode -->
+                        <div class="col-md-4">
+                            <div class="form-floating">
+                                <input type="text" class="form-control" id="pincode" name="pincode" placeholder="Pincode" pattern="[0-9]{6}" required>
+                                <label for="pincode" data-i18n="pincode">Pincode</label>
+                            </div>
+                        </div>
+                        
+                        <!-- Contact Number -->
+                        <div class="col-md-6">
+                            <div class="form-floating">
+                                <input type="tel" class="form-control" id="contact_number" name="contact_number" placeholder="Contact Number" pattern="[0-9]{10}" required>
+                                <label for="contact_number" data-i18n="contact_number">Contact Number</label>
+                            </div>
+                        </div>
+                        
+                        <!-- Email -->
+                        <div class="col-md-6">
+                            <div class="form-floating">
+                                <input type="email" class="form-control" id="email" name="email" placeholder="Email Address" required>
+                                <label for="email" data-i18n="email">Email Address</label>
+                            </div>
+                        </div>
+                        
+                        <!-- Medical Conditions -->
+                        <div class="col-12">
+                            <div class="form-floating">
+                                <textarea class="form-control" id="diseases" name="diseases" placeholder="Medical Conditions" style="height: 100px"></textarea>
+                                <label for="diseases" data-i18n="diseases">Medical Conditions/Diseases (Optional)</label>
+                            </div>
+                            <div class="form-text">Please list any medical conditions, allergies, or medications you're currently taking.</div>
+                        </div>
+                        
+                        <!-- Password -->
+                        <div class="col-12">
+                            <div class="form-floating">
+                                <input type="password" class="form-control" id="password" name="password" placeholder="Password" minlength="6" required>
+                                <label for="password" data-i18n="password">Password</label>
+                            </div>
+                            <div class="form-text">Password must be at least 6 characters long.</div>
+                        </div>
+                        
+                        <!-- Terms and Conditions -->
+                        <div class="col-12">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="terms" required>
+                                <label class="form-check-label" for="terms">
+                                    I agree to the <a href="#" class="text-danger">Terms and Conditions</a> and <a href="#" class="text-danger">Privacy Policy</a>
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <!-- Submit Button -->
+                        <div class="col-12">
+                            <button type="submit" class="btn btn-danger btn-lg w-100">
+                                <i class="fas fa-user-plus me-2"></i>
+                                <span data-i18n="register_now">Register Now</span>
+                            </button>
+                        </div>
+                    </div>
+                </form>
+                
+                <hr class="my-4">
+                
+                <div class="text-center">
+                    <p class="mb-0">
+                        <span data-i18n="already_have_account">Already have an account?</span>
+                        <a href="{{ url_for('login') }}" class="text-danger fw-bold">
+                            <span data-i18n="login_now">Login Now</span>
+                        </a>
+                    </p>
+                    <p class="mt-2 mb-0">
+                        <span>Are you a hospital?</span>
+                        <a href="{{ url_for('hospital_register') }}" class="text-primary fw-bold">
+                            <span data-i18n="register_as_hospital">Register as Hospital</span>
+                        </a>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Form validation
+document.getElementById('registerForm').addEventListener('submit', function(e) {
+    const password = document.getElementById('password').value;
+    const email = document.getElementById('email').value;
+    const phone = document.getElementById('contact_number').value;
+    const pincode = document.getElementById('pincode').value;
+    
+    let isValid = true;
+    
+    // Password validation
+    if (password.length < 6) {
+        document.getElementById('password').classList.add('is-invalid');
+        isValid = false;
+    }
+    
+    // Email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+        document.getElementById('email').classList.add('is-invalid');
+        isValid = false;
+    }
+    
+    // Phone validation
+    const phoneRegex = /^[0-9]{10}$/;
+    if (!phoneRegex.test(phone)) {
+        document.getElementById('contact_number').classList.add('is-invalid');
+        isValid = false;
+    }
+    
+    // Pincode validation
+    const pincodeRegex = /^[0-9]{6}$/;
+    if (!pincodeRegex.test(pincode)) {
+        document.getElementById('pincode').classList.add('is-invalid');
+        isValid = false;
+    }
+    
+    if (!isValid) {
+        e.preventDefault();
+    }
+});
+
+// Remove invalid class on input
+document.querySelectorAll('.form-control, .form-select').forEach(input => {
+    input.addEventListener('input', function() {
+        this.classList.remove('is-invalid');
+    });
+});
+</script>
+{% endblock %}
