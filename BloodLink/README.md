@@ -228,8 +228,10 @@ For support and questions:
 
 ---
 **Note**:This was built as a collage mini project.
-**Note**: This application is designed for educational and demonstration purposes. For production use, additional security measures, proper API integrations, and comprehensive testing should be implemented.# BloodLink
-By Drushya and Dhaiwik
+**Note**: This application is designed for educational and demonstration purposes. For production use, additional security measures, proper API integrations, and comprehensive testing should be implemented.
+** This Project was done with the help of Dhawik **
+**Github username -@Peash02 **
+
 
 
 
