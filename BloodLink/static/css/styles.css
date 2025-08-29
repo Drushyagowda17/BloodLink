@@ -354,3 +354,69 @@ body {
         border-width: 2px;
     }
 }
+
+/* Dark theme overrides for light backgrounds and muted text */
+[data-theme="dark"] .bg-light {
+    background-color: #121212 !important;
+    color: var(--text-color) !important;
+}
+
+[data-theme="dark"] .card-header.bg-light {
+    background-color: #2d2d2d !important;
+    color: var(--text-color) !important;
+    border-bottom-color: var(--border-color) !important;
+}
+
+[data-theme="dark"] .text-muted {
+    color: #ffffff !important;
+}
+
+/* Chat bubbles in dark mode */
+[data-theme="dark"] .bot-message {
+    background-color: #2a2a2a;
+    color: var(--text-color);
+}
+
+/* Global text color enforcement in dark mode */
+[data-theme="dark"] body,
+[data-theme="dark"] h1, [data-theme="dark"] h2, [data-theme="dark"] h3, [data-theme="dark"] h4, [data-theme="dark"] h5, [data-theme="dark"] h6,
+[data-theme="dark"] p, [data-theme="dark"] span, [data-theme="dark"] li, [data-theme="dark"] dt, [data-theme="dark"] dd,
+[data-theme="dark"] label, [data-theme="dark"] .lead,
+[data-theme="dark"] .card-title, [data-theme="dark"] .card-text,
+[data-theme="dark"] .nav-link,
+[data-theme="dark"] .list-group-item,
+[data-theme="dark"] .form-text, [data-theme="dark"] small, [data-theme="dark"] .small {
+    color: var(--text-color) !important;
+}
+
+/* Links (exclude buttons) */
+[data-theme="dark"] a:not(.btn) {
+    color: var(--text-color) !important;
+}
+
+/* Ensure specific hard-coded text colors switch to white */
+[data-theme="dark"] .profile-label {
+    color: var(--text-color) !important;
+}
+
+/* Dropdowns in dark mode for readability */
+[data-theme="dark"] .dropdown-menu {
+    background-color: #2d2d2d;
+    color: var(--text-color);
+    border-color: var(--border-color);
+}
+[data-theme="dark"] .dropdown-item {
+    color: var(--text-color) !important;
+}
+[data-theme="dark"] .dropdown-item:hover, 
+[data-theme="dark"] .dropdown-item:focus {
+    background-color: #3a3a3a;
+    color: var(--text-color) !important;
+}
+
+/* Placeholder text */
+[data-theme="dark"] input::placeholder,
+[data-theme="dark"] textarea::placeholder {
+    color: var(--text-color) !important;
+    opacity: 0.8;
+}
