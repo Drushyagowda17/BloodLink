@@ -64,6 +64,15 @@
                             </div>
                         </div>
                         
+                        <!-- Test Hospital Name -->
+                        <div class="col-12">
+                            <div class="form-floating">
+                                <input type="text" class="form-control" id="test_hospital_name" name="test_hospital_name" value="{{ user.test_hospital_name or '' }}" placeholder="Hospital Name" required>
+                                <label for="test_hospital_name" data-i18n="test_hospital_name">Hospital Name (Where blood was tested)</label>
+                            </div>
+                            <div class="form-text">Enter the name of the hospital where your blood group was tested.</div>
+                        </div>
+                        
                         <!-- City -->
                         <div class="col-md-4">
                             <div class="form-floating">
@@ -113,6 +122,41 @@
                             </div>
                             <div class="form-text">Please list any medical conditions, allergies, or medications you're currently taking.</div>
                         </div>
+                        
+                        <!-- Verification Status Display -->
+                        {% if user.blood_report_filename %}
+                        <div class="col-12">
+                            <div class="alert alert-info">
+                                <div class="d-flex align-items-center">
+                                    <i class="fas fa-info-circle fa-2x me-3"></i>
+                                    <div>
+                                        <h6 class="alert-heading mb-1" data-i18n="verification_status">Verification Status</h6>
+                                        <p class="mb-1">
+                                            {% if user.report_status == 'approved' %}
+                                                <span class="text-success">
+                                                    <i class="fas fa-check-circle me-1"></i>
+                                                    <span data-i18n="approved">Approved</span> - You are a verified donor!
+                                                </span>
+                                            {% elif user.report_status == 'pending' %}
+                                                <span class="text-warning">
+                                                    <i class="fas fa-clock me-1"></i>
+                                                    <span data-i18n="pending">Pending</span> - Awaiting hospital approval
+                                                </span>
+                                            {% else %}
+                                                <span class="text-danger">
+                                                    <i class="fas fa-times-circle me-1"></i>
+                                                    <span data-i18n="rejected">Rejected</span> - Please contact support
+                                                </span>
+                                            {% endif %}
+                                        </p>
+                                        <small class="text-muted">
+                                            Report submitted: {{ user.report_submitted_at.strftime('%B %d, %Y at %I:%M %p') if user.report_submitted_at }}
+                                        </small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
                         
                         <!-- Action Buttons -->
                         <div class="col-12">
@@ -166,6 +210,10 @@
                     <div class="col-12">
                         <strong data-i18n="contact">Contact:</strong> <span id="previewContact">{{ user.contact_number }}</span>
                     </div>
+                    <div class="col-12">
+                        <strong data-i18n="test_hospital_name">Test Hospital:</strong> 
+                        <span id="previewTestHospital">{{ user.test_hospital_name or '' }}</span>
+                    </div>
                 </div>
             </div>
         </div>
@@ -180,6 +228,7 @@ function updatePreview() {
     document.getElementById('previewAge').textContent = document.getElementById('age').value;
     document.getElementById('previewGender').textContent = document.getElementById('gender').value;
     document.getElementById('previewContact').textContent = document.getElementById('contact_number').value;
+    document.getElementById('previewTestHospital').textContent = document.getElementById('test_hospital_name').value;
     
     const city = document.getElementById('city').value;
     const state = document.getElementById('state').value;
@@ -197,13 +246,22 @@ document.querySelectorAll('#editProfileForm input, #editProfileForm select, #edi
 document.getElementById('editProfileForm').addEventListener('submit', function(e) {
     const phone = document.getElementById('contact_number').value;
     const pincode = document.getElementById('pincode').value;
+    const age = parseInt(document.getElementById('age').value);
     
     let isValid = true;
+    
+    // Age validation
+    if (age < 18 || age > 65) {
+        document.getElementById('age').classList.add('is-invalid');
+        showToast(translations.invalid_age || 'Age must be between 18 and 65', 'error');
+        isValid = false;
+    }
     
     // Phone validation
     const phoneRegex = /^[0-9]{10}$/;
     if (!phoneRegex.test(phone)) {
         document.getElementById('contact_number').classList.add('is-invalid');
+        showToast(translations.invalid_phone || 'Please enter a valid 10-digit phone number', 'error');
         isValid = false;
     }
     
@@ -211,12 +269,24 @@ document.getElementById('editProfileForm').addEventListener('submit', function(e
     const pincodeRegex = /^[0-9]{6}$/;
     if (!pincodeRegex.test(pincode)) {
         document.getElementById('pincode').classList.add('is-invalid');
+        showToast('Please enter a valid 6-digit pincode', 'error');
         isValid = false;
     }
     
     if (!isValid) {
         e.preventDefault();
-        showToast('Please fix the validation errors before saving.', 'danger');
+    } else {
+        // Show loading state
+        const submitBtn = this.querySelector('button[type="submit"]');
+        const originalText = submitBtn.innerHTML;
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Saving...';
+        submitBtn.disabled = true;
+        
+        // Re-enable button after 10 seconds (in case of error)
+        setTimeout(() => {
+            submitBtn.innerHTML = originalText;
+            submitBtn.disabled = false;
+        }, 10000);
     }
 });
 
@@ -225,6 +295,34 @@ document.querySelectorAll('.form-control, .form-select').forEach(input => {
     input.addEventListener('input', function() {
         this.classList.remove('is-invalid');
     });
+});
+
+// Real-time validation feedback
+document.getElementById('age').addEventListener('input', function() {
+    const age = parseInt(this.value);
+    if (age && (age < 18 || age > 65)) {
+        this.classList.add('is-invalid');
+    } else {
+        this.classList.remove('is-invalid');
+    }
+});
+
+document.getElementById('contact_number').addEventListener('input', function() {
+    const phoneRegex = /^[0-9]{10}$/;
+    if (this.value && !phoneRegex.test(this.value)) {
+        this.classList.add('is-invalid');
+    } else {
+        this.classList.remove('is-invalid');
+    }
+});
+
+document.getElementById('pincode').addEventListener('input', function() {
+    const pincodeRegex = /^[0-9]{6}$/;
+    if (this.value && !pincodeRegex.test(this.value)) {
+        this.classList.add('is-invalid');
+    } else {
+        this.classList.remove('is-invalid');
+    }
 });
 
 // Confirm before leaving with unsaved changes

@@ -18,6 +18,63 @@
     </div>
 </div>
 
+<!-- Pending Approvals Section -->
+{% if pending_approvals %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header bg-warning text-dark">
+                <h5 class="mb-0">
+                    <i class="fas fa-clock me-2"></i>
+                    <span data-i18n="pending_approvals">Pending Approvals</span>
+                    <span class="badge bg-dark ms-2">{{ pending_approvals|length }}</span>
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    {% for donor in pending_approvals %}
+                    <div class="col-md-6 col-lg-4">
+                        <div class="card border-warning">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <h6 class="card-title mb-0">{{ donor.name }}</h6>
+                                    <span class="blood-group-badge">{{ donor.blood_group }}</span>
+                                </div>
+                                <p class="card-text small text-muted mb-2">
+                                    <i class="fas fa-map-marker-alt me-1"></i>
+                                    {{ donor.city }}, {{ donor.state }}
+                                </p>
+                                <p class="card-text small text-muted mb-3">
+                                    <i class="fas fa-clock me-1"></i>
+                                    Submitted: {{ donor.report_submitted_at.strftime('%b %d, %Y at %I:%M %p') }}
+                                </p>
+                                <div class="d-flex gap-2">
+                                    <form method="POST" action="{{ url_for('approve_donor', donor_id=donor.id) }}" class="flex-fill">
+                                        <input type="hidden" name="action" value="approve">
+                                        <button type="submit" class="btn btn-success btn-sm w-100">
+                                            <i class="fas fa-check me-1"></i>
+                                            <span data-i18n="approve_donor">Approve</span>
+                                        </button>
+                                    </form>
+                                    <form method="POST" action="{{ url_for('approve_donor', donor_id=donor.id) }}" class="flex-fill">
+                                        <input type="hidden" name="action" value="reject">
+                                        <button type="submit" class="btn btn-outline-danger btn-sm w-100">
+                                            <i class="fas fa-times me-1"></i>
+                                            <span data-i18n="reject_donor">Reject</span>
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
 <!-- Search Filters -->
 <div class="search-filters">
     <form method="GET" id="searchForm">
@@ -33,7 +90,7 @@
             </div>
             <div class="col-md-3">
                 <label for="city" class="form-label" data-i18n="city">City</label>
-                <input type="text" class="form-control" id="city" name="city" value="{{ search_city or '' }}" placeholder="Enter city">
+                <input type="text" class="form-control" id="city" name="city" value="{{ search_city or '' }}" placeholder="Enter city" data-i18n="search_placeholder">
             </div>
             <div class="col-md-3">
                 <label for="state" class="form-label" data-i18n="state">State</label>
@@ -62,13 +119,17 @@
             <div class="card-header d-flex justify-content-between align-items-center">
                 <h5 class="mb-0">
                     <i class="fas fa-users me-2"></i>
-                    <span data-i18n="search_donors">Available Donors</span>
+                    <span data-i18n="search_donors">Verified Donors</span>
                     <span class="badge bg-primary ms-2">{{ donors|length }}</span>
                 </h5>
-                <div>
+                <div class="d-flex gap-2">
+                    <button class="btn btn-outline-success btn-sm" onclick="exportData('csv')">
+                        <i class="fas fa-download me-1"></i>
+                        <span data-i18n="export_csv">Export CSV</span>
+                    </button>
                     <button class="btn btn-outline-primary btn-sm" onclick="printPage()">
                         <i class="fas fa-print me-1"></i>
-                        Print List
+                        <span data-i18n="print_profile">Print List</span>
                     </button>
                 </div>
             </div>
@@ -85,6 +146,7 @@
                                     <th data-i18n="location">Location</th>
                                     <th data-i18n="contact">Contact</th>
                                     <th data-i18n="diseases">Medical Conditions</th>
+                                    <th data-i18n="verification_status">Status</th>
                                     <th data-i18n="actions">Actions</th>
                                 </tr>
                             </thead>
@@ -134,12 +196,25 @@
                                         {% endif %}
                                     </td>
                                     <td>
+                                        {% if donor.is_verified_donor %}
+                                            <span class="verification-badge verified">
+                                                <i class="fas fa-check-circle"></i>
+                                                <span data-i18n="verified_donor">Verified</span>
+                                            </span>
+                                        {% else %}
+                                            <span class="verification-badge pending">
+                                                <i class="fas fa-clock"></i>
+                                                <span data-i18n="pending_verification">Pending</span>
+                                            </span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
                                         <div class="btn-group" role="group">
                                             <a href="{{ url_for('new_usage', donor_id=donor.id) }}" class="btn btn-success btn-sm">
                                                 <i class="fas fa-plus me-1"></i>
                                                 <span data-i18n="record_usage">Record Usage</span>
                                             </a>
-                                            <button class="btn btn-outline-info btn-sm" onclick="viewDonorDetails({{ donor.id }}, '{{ donor.name }}', '{{ donor.blood_group }}', '{{ donor.age }}', '{{ donor.gender }}', '{{ donor.city }}, {{ donor.state }}', '{{ donor.contact_number }}', '{{ donor.email }}', '{{ donor.diseases or '' }}')">
+                                            <button class="btn btn-outline-info btn-sm" onclick="viewDonorDetails({{ donor.id }}, '{{ donor.name }}', '{{ donor.blood_group }}', '{{ donor.age }}', '{{ donor.gender }}', '{{ donor.city }}, {{ donor.state }}', '{{ donor.contact_number }}', '{{ donor.email }}', '{{ donor.diseases or '' }}', '{{ donor.test_hospital_name or '' }}')">
                                                 <i class="fas fa-eye"></i>
                                             </button>
                                         </div>
@@ -152,7 +227,7 @@
                 {% else %}
                     <div class="text-center py-5">
                         <i class="fas fa-search text-muted" style="font-size: 4rem;"></i>
-                        <h5 class="mt-3 text-muted" data-i18n="no_donors_found">No donors found matching your criteria.</h5>
+                        <h5 class="mt-3 text-muted" data-i18n="no_donors_found">No verified donors found matching your criteria.</h5>
                         <p class="text-muted">Try adjusting your search filters or clear all filters to see all available donors.</p>
                         <button class="btn btn-outline-primary" onclick="clearSearch()">
                             <i class="fas fa-refresh me-1"></i>
@@ -170,8 +245,16 @@
     <div class="col-md-3">
         <div class="card text-center">
             <div class="card-body">
-                <h3 class="text-primary">{{ donors|length }}</h3>
-                <p class="mb-0">Available Donors</p>
+                <h3 class="text-primary" id="stat-total_donors">{{ donors|length }}</h3>
+                <p class="mb-0" data-i18n="total_donors">Available Donors</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <h3 class="text-warning" id="stat-pending_approvals">{{ pending_approvals|length }}</h3>
+                <p class="mb-0" data-i18n="pending_approvals">Pending Approvals</p>
             </div>
         </div>
     </div>
@@ -186,20 +269,12 @@
     <div class="col-md-3">
         <div class="card text-center">
             <div class="card-body">
-                <h3 class="text-info">24/7</h3>
-                <p class="mb-0">Support Available</p>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-3">
-        <div class="card text-center">
-            <div class="card-body">
-                <h3 class="text-warning">
+                <h3 class="text-info">
                     <i class="fas fa-robot"></i>
                 </h3>
                 <p class="mb-0">
                     <button class="btn btn-link p-0" onclick="toggleChatbot()">
-                        Medical Assistant
+                        <span data-i18n="medical_assistant">Medical Assistant</span>
                     </button>
                 </p>
             </div>
@@ -273,7 +348,7 @@ function clearSearch() {
 }
 
 // View donor details
-function viewDonorDetails(id, name, bloodGroup, age, gender, location, contact, email, diseases) {
+function viewDonorDetails(id, name, bloodGroup, age, gender, location, contact, email, diseases, testHospital) {
     const content = document.getElementById('donorDetailsContent');
     content.innerHTML = `
         <div class="col-md-6">
@@ -300,6 +375,9 @@ function viewDonorDetails(id, name, bloodGroup, age, gender, location, contact, 
             <strong data-i18n="email">Email:</strong> 
             <a href="mailto:${email}">${email}</a>
         </div>
+        ${testHospital ? `<div class="col-12">
+            <strong data-i18n="test_hospital_name">Test Hospital:</strong> ${testHospital}
+        </div>` : ''}
         <div class="col-12">
             <strong data-i18n="diseases">Medical Conditions:</strong> 
             ${diseases || 'None reported'}
@@ -317,7 +395,9 @@ function viewDonorDetails(id, name, bloodGroup, age, gender, location, contact, 
 
 // Auto-refresh every 5 minutes
 setInterval(function() {
-    location.reload();
+    if (typeof updateDashboardStats === 'function') {
+        updateDashboardStats();
+    }
 }, 300000);
 
 // Keyboard shortcuts
@@ -333,6 +413,35 @@ document.addEventListener('keydown', function(e) {
         e.preventDefault();
         location.reload();
     }
+});
+
+// Initialize dashboard stats
+document.addEventListener('DOMContentLoaded', function() {
+    if (typeof initializeDashboardStats === 'function') {
+        initializeDashboardStats();
+    }
+});
+
+// Confirmation for approval/rejection actions
+document.querySelectorAll('form[action*="approve_donor"]').forEach(form => {
+    form.addEventListener('submit', function(e) {
+        const action = this.querySelector('input[name="action"]').value;
+        const donorName = this.closest('.card').querySelector('.card-title').textContent;
+        
+        const message = action === 'approve' 
+            ? `Are you sure you want to approve ${donorName} as a verified donor?`
+            : `Are you sure you want to reject ${donorName}'s verification?`;
+            
+        if (!confirm(message)) {
+            e.preventDefault();
+        } else {
+            // Show loading state
+            const btn = this.querySelector('button[type="submit"]');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+            btn.disabled = true;
+        }
+    });
 });
 </script>
 {% endblock %}

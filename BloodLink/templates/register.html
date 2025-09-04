@@ -13,7 +13,7 @@
                 </h3>
             </div>
             <div class="card-body p-5">
-                <form method="POST" id="registerForm" onsubmit="return validateForm('registerForm')">
+                <form method="POST" enctype="multipart/form-data" id="registerForm" onsubmit="return validateForm('registerForm')">
                     <div class="row g-3">
                         <!-- Full Name -->
                         <div class="col-md-6">
@@ -34,13 +34,18 @@
                         <!-- Gender -->
                         <div class="col-md-6">
                             <div class="form-floating">
-                                <select class="form-select" id="gender" name="gender" required>
+                                <select class="form-select" id="gender" name="gender" required onchange="toggleOtherGender()">
                                     <option value="">Choose...</option>
                                     <option value="Male" data-i18n="male">Male</option>
                                     <option value="Female" data-i18n="female">Female</option>
                                     <option value="Other" data-i18n="other">Other</option>
                                 </select>
                                 <label for="gender" data-i18n="gender">Gender</label>
+                            </div>
+                            <!-- Other Gender Text Input -->
+                            <div class="form-floating mt-2" id="otherGenderDiv" style="display: none;">
+                                <input type="text" class="form-control" id="otherGender" name="other_gender" placeholder="Please specify">
+                                <label for="otherGender">Please specify your gender</label>
                             </div>
                         </div>
                         
@@ -60,6 +65,28 @@
                                 </select>
                                 <label for="blood_group" data-i18n="blood_group">Blood Group</label>
                             </div>
+                        </div>
+                        
+                        <!-- Test Hospital Name -->
+                        <div class="col-12">
+                            <div class="form-floating">
+                                <input type="text" class="form-control" id="test_hospital_name" name="test_hospital_name" placeholder="Hospital Name" required>
+                                <label for="test_hospital_name" data-i18n="test_hospital_name">Hospital Name (Where blood was tested)</label>
+                            </div>
+                            <div class="form-text">Enter the name of the hospital where your blood group was tested.</div>
+                        </div>
+                        
+                        <!-- Blood Test Report Upload -->
+                        <div class="col-12">
+                            <label class="form-label" data-i18n="upload_blood_report">Upload Blood Test Report</label>
+                            <div class="file-upload-area" id="fileUploadArea">
+                                <i class="fas fa-cloud-upload-alt fa-3x text-muted mb-3"></i>
+                                <h5 data-i18n="upload_blood_report">Upload Blood Test Report</h5>
+                                <p class="text-muted" data-i18n="drag_drop_or_click">Drag & drop your file here or click to browse</p>
+                                <small class="text-muted" data-i18n="supported_formats">Supported formats: PNG, JPG, PDF (Max 16MB)</small>
+                            </div>
+                            <input type="file" class="form-control d-none" id="blood_report" name="blood_report" accept=".png,.jpg,.jpeg,.pdf">
+                            <div class="form-text">Upload your blood test report for verification. This helps hospitals confirm your blood group.</div>
                         </div>
                         
                         <!-- City -->
@@ -120,6 +147,15 @@
                             <div class="form-text">Password must be at least 6 characters long.</div>
                         </div>
                         
+                        <!-- Verification Notice -->
+                        <div class="col-12">
+                            <div class="alert alert-info">
+                                <i class="fas fa-info-circle me-2"></i>
+                                <strong data-i18n="hospital_confirmation_required">Hospital confirmation required for verification</strong><br>
+                                <span data-i18n="auto_approval_message">Report will be accepted after hospital confirms.</span>
+                            </div>
+                        </div>
+                        
                         <!-- Terms and Conditions -->
                         <div class="col-12">
                             <div class="form-check">
@@ -162,18 +198,43 @@
 </div>
 
 <script>
+// Toggle other gender input
+function toggleOtherGender() {
+    const genderSelect = document.getElementById('gender');
+    const otherGenderDiv = document.getElementById('otherGenderDiv');
+    const otherGenderInput = document.getElementById('otherGender');
+    
+    if (genderSelect.value === 'Other') {
+        otherGenderDiv.style.display = 'block';
+        otherGenderInput.required = true;
+    } else {
+        otherGenderDiv.style.display = 'none';
+        otherGenderInput.required = false;
+        otherGenderInput.value = '';
+    }
+}
+
 // Form validation
 document.getElementById('registerForm').addEventListener('submit', function(e) {
     const password = document.getElementById('password').value;
     const email = document.getElementById('email').value;
     const phone = document.getElementById('contact_number').value;
     const pincode = document.getElementById('pincode').value;
+    const age = parseInt(document.getElementById('age').value);
     
     let isValid = true;
+    
+    // Age validation
+    if (age < 18 || age > 65) {
+        document.getElementById('age').classList.add('is-invalid');
+        showToast(translations.invalid_age || 'Age must be between 18 and 65', 'error');
+        isValid = false;
+    }
     
     // Password validation
     if (password.length < 6) {
         document.getElementById('password').classList.add('is-invalid');
+        showToast(translations.password_too_short || 'Password must be at least 6 characters long', 'error');
         isValid = false;
     }
     
@@ -181,6 +242,7 @@ document.getElementById('registerForm').addEventListener('submit', function(e) {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
         document.getElementById('email').classList.add('is-invalid');
+        showToast(translations.invalid_email || 'Please enter a valid email address', 'error');
         isValid = false;
     }
     
@@ -188,6 +250,7 @@ document.getElementById('registerForm').addEventListener('submit', function(e) {
     const phoneRegex = /^[0-9]{10}$/;
     if (!phoneRegex.test(phone)) {
         document.getElementById('contact_number').classList.add('is-invalid');
+        showToast(translations.invalid_phone || 'Please enter a valid 10-digit phone number', 'error');
         isValid = false;
     }
     
@@ -195,11 +258,24 @@ document.getElementById('registerForm').addEventListener('submit', function(e) {
     const pincodeRegex = /^[0-9]{6}$/;
     if (!pincodeRegex.test(pincode)) {
         document.getElementById('pincode').classList.add('is-invalid');
+        showToast('Please enter a valid 6-digit pincode', 'error');
         isValid = false;
     }
     
     if (!isValid) {
         e.preventDefault();
+    } else {
+        // Show loading state
+        const submitBtn = this.querySelector('button[type="submit"]');
+        const originalText = submitBtn.innerHTML;
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Registering...';
+        submitBtn.disabled = true;
+        
+        // Re-enable button after 10 seconds (in case of error)
+        setTimeout(() => {
+            submitBtn.innerHTML = originalText;
+            submitBtn.disabled = false;
+        }, 10000);
     }
 });
 
@@ -208,6 +284,51 @@ document.querySelectorAll('.form-control, .form-select').forEach(input => {
     input.addEventListener('input', function() {
         this.classList.remove('is-invalid');
     });
+});
+
+// Real-time validation feedback
+document.getElementById('age').addEventListener('input', function() {
+    const age = parseInt(this.value);
+    if (age && (age < 18 || age > 65)) {
+        this.classList.add('is-invalid');
+    } else {
+        this.classList.remove('is-invalid');
+    }
+});
+
+document.getElementById('password').addEventListener('input', function() {
+    if (this.value.length > 0 && this.value.length < 6) {
+        this.classList.add('is-invalid');
+    } else {
+        this.classList.remove('is-invalid');
+    }
+});
+
+document.getElementById('email').addEventListener('input', function() {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (this.value && !emailRegex.test(this.value)) {
+        this.classList.add('is-invalid');
+    } else {
+        this.classList.remove('is-invalid');
+    }
+});
+
+document.getElementById('contact_number').addEventListener('input', function() {
+    const phoneRegex = /^[0-9]{10}$/;
+    if (this.value && !phoneRegex.test(this.value)) {
+        this.classList.add('is-invalid');
+    } else {
+        this.classList.remove('is-invalid');
+    }
+});
+
+document.getElementById('pincode').addEventListener('input', function() {
+    const pincodeRegex = /^[0-9]{6}$/;
+    if (this.value && !pincodeRegex.test(this.value)) {
+        this.classList.add('is-invalid');
+    } else {
+        this.classList.remove('is-invalid');
+    }
 });
 </script>
 {% endblock %}
