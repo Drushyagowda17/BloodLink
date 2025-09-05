@@ -230,6 +230,6 @@ For support and questions:
 **Note**:This was built as a collage mini project.
 **Note**: This application is designed for educational and demonstration purposes. For production use, additional security measures, proper API integrations, and comprehensive testing should be implemented.# BloodLink
 
-
+*Any questions contact at : drushyagmgowda@gmail.com
 
 
