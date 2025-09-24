@@ -146,18 +146,264 @@ function initializeChatbot() {
             this.style.height = (this.scrollHeight) + 'px';
         });
     }
+    
+    // Initialize draggable functionality
+    initializeChatbotDragging();
+}
+
+// Draggable Chatbot Functionality
+function initializeChatbotDragging() {
+    const chatbotWidget = document.getElementById('chatbotWidget');
+    const chatbotToggleBtn = document.getElementById('chatbotToggleBtn');
+    const chatbotHeader = document.querySelector('.chatbot-header');
+    
+    if (!chatbotWidget || !chatbotToggleBtn) return;
+    
+    let isDragging = false;
+    let dragOffset = { x: 0, y: 0 };
+    let startPos = { x: 0, y: 0 };
+    let hasMoved = false;
+    let dragTarget = null;
+    
+    // Mouse events for toggle button
+    chatbotToggleBtn.addEventListener('mousedown', startDrag);
+    
+    // Mouse events for header (when panel is open)
+    if (chatbotHeader) {
+        chatbotHeader.addEventListener('mousedown', startDragFromHeader);
+    }
+    
+    // Global mouse events
+    document.addEventListener('mousemove', drag);
+    document.addEventListener('mouseup', endDrag);
+    
+    // Touch events for toggle button
+    chatbotToggleBtn.addEventListener('touchstart', startDragTouch, { passive: false });
+    
+    // Touch events for header
+    if (chatbotHeader) {
+        chatbotHeader.addEventListener('touchstart', startDragTouchFromHeader, { passive: false });
+    }
+    
+    // Global touch events
+    document.addEventListener('touchmove', dragTouch, { passive: false });
+    document.addEventListener('touchend', endDragTouch);
+    
+    function startDrag(e) {
+        isDragging = true;
+        hasMoved = false;
+        dragTarget = 'button';
+        chatbotWidget.classList.add('dragging');
+        
+        const rect = chatbotWidget.getBoundingClientRect();
+        dragOffset.x = e.clientX - rect.left;
+        dragOffset.y = e.clientY - rect.top;
+        startPos.x = e.clientX;
+        startPos.y = e.clientY;
+        
+        e.preventDefault();
+    }
+    
+    function startDragFromHeader(e) {
+        // Don't drag if clicking on close button
+        if (e.target.closest('.chatbot-close-btn')) {
+            return;
+        }
+        
+        isDragging = true;
+        hasMoved = false;
+        dragTarget = 'header';
+        chatbotWidget.classList.add('dragging');
+        
+        const rect = chatbotWidget.getBoundingClientRect();
+        dragOffset.x = e.clientX - rect.left;
+        dragOffset.y = e.clientY - rect.top;
+        startPos.x = e.clientX;
+        startPos.y = e.clientY;
+        
+        e.preventDefault();
+    }
+    
+    function startDragTouch(e) {
+        const touch = e.touches[0];
+        isDragging = true;
+        hasMoved = false;
+        dragTarget = 'button';
+        chatbotWidget.classList.add('dragging');
+        
+        const rect = chatbotWidget.getBoundingClientRect();
+        dragOffset.x = touch.clientX - rect.left;
+        dragOffset.y = touch.clientY - rect.top;
+        startPos.x = touch.clientX;
+        startPos.y = touch.clientY;
+        
+        e.preventDefault();
+    }
+    
+    function startDragTouchFromHeader(e) {
+        // Don't drag if touching close button
+        if (e.target.closest('.chatbot-close-btn')) {
+            return;
+        }
+        
+        const touch = e.touches[0];
+        isDragging = true;
+        hasMoved = false;
+        dragTarget = 'header';
+        chatbotWidget.classList.add('dragging');
+        
+        const rect = chatbotWidget.getBoundingClientRect();
+        dragOffset.x = touch.clientX - rect.left;
+        dragOffset.y = touch.clientY - rect.top;
+        startPos.x = touch.clientX;
+        startPos.y = touch.clientY;
+        
+        e.preventDefault();
+    }
+    
+    function drag(e) {
+        if (!isDragging) return;
+        
+        const moveDistance = Math.abs(e.clientX - startPos.x) + Math.abs(e.clientY - startPos.y);
+        if (moveDistance > 5) {
+            hasMoved = true;
+        }
+        
+        const x = e.clientX - dragOffset.x;
+        const y = e.clientY - dragOffset.y;
+        
+        // Keep chatbot within viewport bounds
+        const maxX = window.innerWidth - chatbotWidget.offsetWidth;
+        const maxY = window.innerHeight - chatbotWidget.offsetHeight;
+        
+        const constrainedX = Math.max(0, Math.min(x, maxX));
+        const constrainedY = Math.max(0, Math.min(y, maxY));
+        
+        chatbotWidget.style.left = constrainedX + 'px';
+        chatbotWidget.style.top = constrainedY + 'px';
+        chatbotWidget.style.right = 'auto';
+        chatbotWidget.style.bottom = 'auto';
+        
+        e.preventDefault();
+    }
+    
+    function dragTouch(e) {
+        if (!isDragging) return;
+        
+        const touch = e.touches[0];
+        const moveDistance = Math.abs(touch.clientX - startPos.x) + Math.abs(touch.clientY - startPos.y);
+        if (moveDistance > 5) {
+            hasMoved = true;
+        }
+        
+        const x = touch.clientX - dragOffset.x;
+        const y = touch.clientY - dragOffset.y;
+        
+        // Keep chatbot within viewport bounds
+        const maxX = window.innerWidth - chatbotWidget.offsetWidth;
+        const maxY = window.innerHeight - chatbotWidget.offsetHeight;
+        
+        const constrainedX = Math.max(0, Math.min(x, maxX));
+        const constrainedY = Math.max(0, Math.min(y, maxY));
+        
+        chatbotWidget.style.left = constrainedX + 'px';
+        chatbotWidget.style.top = constrainedY + 'px';
+        chatbotWidget.style.right = 'auto';
+        chatbotWidget.style.bottom = 'auto';
+        
+        e.preventDefault();
+    }
+    
+    function endDrag(e) {
+        if (!isDragging) return;
+        
+        isDragging = false;
+        chatbotWidget.classList.remove('dragging');
+        
+        // If the chatbot wasn't moved significantly, treat it as a click
+        if (!hasMoved) {
+            toggleChatbot();
+        }
+        
+        // Save position to localStorage
+        const rect = chatbotWidget.getBoundingClientRect();
+        localStorage.setItem('chatbotPosition', JSON.stringify({
+            left: rect.left,
+            top: rect.top
+        }));
+    }
+    
+    function endDragTouch(e) {
+        if (!isDragging) return;
+        
+        isDragging = false;
+        chatbotWidget.classList.remove('dragging');
+        
+        // If the chatbot wasn't moved significantly, treat it as a tap
+        if (!hasMoved) {
+            toggleChatbot();
+        }
+        
+        // Save position to localStorage
+        const rect = chatbotWidget.getBoundingClientRect();
+        localStorage.setItem('chatbotPosition', JSON.stringify({
+            left: rect.left,
+            top: rect.top
+        }));
+    }
+    
+    // Restore saved position
+    const savedPosition = localStorage.getItem('chatbotPosition');
+    if (savedPosition) {
+        try {
+            const pos = JSON.parse(savedPosition);
+            // Ensure position is still within viewport
+            const maxX = window.innerWidth - chatbotWidget.offsetWidth;
+            const maxY = window.innerHeight - chatbotWidget.offsetHeight;
+            
+            const constrainedX = Math.max(0, Math.min(pos.left, maxX));
+            const constrainedY = Math.max(0, Math.min(pos.top, maxY));
+            
+            chatbotWidget.style.left = constrainedX + 'px';
+            chatbotWidget.style.top = constrainedY + 'px';
+            chatbotWidget.style.right = 'auto';
+            chatbotWidget.style.bottom = 'auto';
+        } catch (e) {
+            console.log('Could not restore chatbot position');
+        }
+    }
+    
+    // Handle window resize to keep chatbot in bounds
+    window.addEventListener('resize', function() {
+        const rect = chatbotWidget.getBoundingClientRect();
+        const maxX = window.innerWidth - chatbotWidget.offsetWidth;
+        const maxY = window.innerHeight - chatbotWidget.offsetHeight;
+        
+        if (rect.left > maxX || rect.top > maxY) {
+            const constrainedX = Math.max(0, Math.min(rect.left, maxX));
+            const constrainedY = Math.max(0, Math.min(rect.top, maxY));
+            
+            chatbotWidget.style.left = constrainedX + 'px';
+            chatbotWidget.style.top = constrainedY + 'px';
+        }
+    });
 }
 
 function toggleChatbot() {
-    const chatbotBody = document.getElementById('chatbotBody');
-    const chatbotToggle = document.getElementById('chatbotToggle');
+    const chatbotPanel = document.getElementById('chatbotPanel');
+    const chatbotToggleBtn = document.getElementById('chatbotToggleBtn');
     
-    if (chatbotBody && chatbotToggle) {
-        const isShowing = chatbotBody.classList.contains('show');
-        chatbotBody.classList.toggle('show');
-        chatbotToggle.className = chatbotBody.classList.contains('show') 
-            ? 'fas fa-chevron-down' 
-            : 'fas fa-chevron-up';
+    if (chatbotPanel && chatbotToggleBtn) {
+        const isShowing = chatbotPanel.classList.contains('show');
+        chatbotPanel.classList.toggle('show');
+        
+        // Update button icon
+        const icon = chatbotToggleBtn.querySelector('i');
+        if (icon) {
+            icon.className = chatbotPanel.classList.contains('show') 
+                ? 'fas fa-times' 
+                : 'fas fa-robot';
+        }
         
         // Focus input when opening
         if (!isShowing) {
@@ -737,8 +983,8 @@ document.addEventListener('DOMContentLoaded', function() {
 document.addEventListener('keydown', function(e) {
     // ESC key to close chatbot
     if (e.key === 'Escape') {
-        const chatbotBody = document.getElementById('chatbotBody');
-        if (chatbotBody && chatbotBody.classList.contains('show')) {
+        const chatbotPanel = document.getElementById('chatbotPanel');
+        if (chatbotPanel && chatbotPanel.classList.contains('show')) {
             toggleChatbot();
         }
         
