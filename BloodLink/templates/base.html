@@ -142,25 +142,35 @@
     <!-- Chatbot Widget -->
     {% if current_user.is_authenticated %}
     <div class="chatbot-widget" id="chatbotWidget">
-        <div class="chatbot-header" onclick="toggleChatbot()">
-            <div class="d-flex align-items-center">
-                <i class="fas fa-robot me-2"></i>
-                <span data-i18n="medical_assistant">Medical Assistant</span>
-            </div>
-            <i class="fas fa-chevron-up" id="chatbotToggle"></i>
-        </div>
-        <div class="chatbot-body" id="chatbotBody">
-            <div class="chatbot-messages" id="chatbotMessages">
-                <div class="bot-message">
-                    <span data-i18n="chatbot_welcome">Hello! I'm here to help with general health information. How can I assist you today?</span>
+        <!-- Toggle Button (Small Blue Circle) -->
+        <button class="chatbot-toggle-btn" id="chatbotToggleBtn" title="Medical Assistant">
+            <i class="fas fa-robot"></i>
+        </button>
+        
+        <!-- Chatbot Panel (Hidden by default) -->
+        <div class="chatbot-panel" id="chatbotPanel">
+            <div class="chatbot-header">
+                <div class="d-flex align-items-center">
+                    <i class="fas fa-robot me-2"></i>
+                    <span data-i18n="medical_assistant">Medical Assistant</span>
                 </div>
+                <button class="chatbot-close-btn" onclick="toggleChatbot()" title="Close">
+                    <i class="fas fa-times"></i>
+                </button>
             </div>
-            <div class="chatbot-input">
-                <div class="input-group">
-                    <input type="text" class="form-control" id="chatbotInput" data-i18n="type_message" placeholder="Type your message...">
-                    <button class="btn btn-primary" onclick="sendMessage()" type="button">
-                        <i class="fas fa-paper-plane"></i>
-                    </button>
+            <div class="chatbot-body" id="chatbotBody">
+                <div class="chatbot-messages" id="chatbotMessages">
+                    <div class="bot-message">
+                        <span data-i18n="chatbot_welcome">Hello! I'm here to help with general health information. How can I assist you today?</span>
+                    </div>
+                </div>
+                <div class="chatbot-input">
+                    <div class="input-group">
+                        <input type="text" class="form-control" id="chatbotInput" data-i18n="type_message" placeholder="Type your message...">
+                        <button class="btn btn-primary" onclick="sendMessage()" type="button">
+                            <i class="fas fa-paper-plane"></i>
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
