@@ -1,0 +1,210 @@
+{% extends "base.html" %}
+
+{% block title %}Hospital Registration - BloodLink{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-7 col-md-9">
+        <div class="card shadow">
+            <div class="card-header bg-primary text-white text-center py-4">
+                <h3 class="mb-0">
+                    <i class="fas fa-hospital me-2"></i>
+                    <span data-i18n="hospital_registration">Hospital Registration</span>
+                </h3>
+            </div>
+            <div class="card-body p-5">
+                <div class="alert alert-info" role="alert">
+                    <i class="fas fa-info-circle me-2"></i>
+                    <strong>Note:</strong> You need a valid Hospital Code to register. Contact the administrator if you don't have one.
+                </div>
+                
+                <form method="POST" id="hospitalRegisterForm">
+                    <div class="row g-3">
+                        <!-- Hospital Name -->
+                        <div class="col-12">
+                            <div class="form-floating">
+                                <input type="text" class="form-control" id="name" name="name" placeholder="Hospital Name" required>
+                                <label for="name" data-i18n="hospital_name">Hospital Name</label>
+                            </div>
+                        </div>
+                        
+                        <!-- Hospital Code -->
+                        <div class="col-md-6">
+                            <div class="form-floating">
+                                <input type="text" class="form-control" id="hospital_code" name="hospital_code" placeholder="Hospital Code" required>
+                                <label for="hospital_code" data-i18n="hospital_code">Hospital Code</label>
+                            </div>
+                            <div class="form-text">Enter the unique code provided by the administrator.</div>
+                        </div>
+                        
+                        <!-- Contact Number -->
+                        <div class="col-md-6">
+                            <div class="form-floating">
+                                <input type="tel" class="form-control" id="contact_number" name="contact_number" placeholder="Contact Number" pattern="[0-9]{10}" required>
+                                <label for="contact_number" data-i18n="contact_number">Contact Number</label>
+                            </div>
+                        </div>
+                        
+                        <!-- City -->
+                        <div class="col-md-6">
+                            <div class="form-floating">
+                                <input type="text" class="form-control" id="city" name="city" placeholder="City" required>
+                                <label for="city" data-i18n="city">City</label>
+                            </div>
+                        </div>
+                        
+                        <!-- State -->
+                        <div class="col-md-6">
+                            <div class="form-floating">
+                                <input type="text" class="form-control" id="state" name="state" placeholder="State" required>
+                                <label for="state" data-i18n="state">State</label>
+                            </div>
+                        </div>
+                        
+                        <!-- Email -->
+                        <div class="col-md-6">
+                            <div class="form-floating">
+                                <input type="email" class="form-control" id="email" name="email" placeholder="Email Address" required>
+                                <label for="email" data-i18n="email">Email Address</label>
+                            </div>
+                        </div>
+                        
+                        <!-- Password -->
+                        <div class="col-md-6">
+                            <div class="form-floating">
+                                <input type="password" class="form-control" id="password" name="password" placeholder="Password" minlength="6" required>
+                                <label for="password" data-i18n="password">Password</label>
+                            </div>
+                        </div>
+                        
+                        <!-- Terms and Conditions -->
+                        <div class="col-12">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="terms" required>
+                                <label class="form-check-label" for="terms">
+                                    I agree to the <a href="#" class="text-primary">Terms and Conditions</a> and <a href="#" class="text-primary">Privacy Policy</a>
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <!-- Hospital Verification -->
+                        <div class="col-12">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="verification" required>
+                                <label class="form-check-label" for="verification">
+                                    I certify that this is a legitimate medical facility and I have the authority to register on behalf of this hospital.
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <!-- Submit Button -->
+                        <div class="col-12">
+                            <button type="submit" class="btn btn-primary btn-lg w-100">
+                                <i class="fas fa-hospital me-2"></i>
+                                <span data-i18n="register_now">Register Hospital</span>
+                            </button>
+                        </div>
+                    </div>
+                </form>
+                
+                <hr class="my-4">
+                
+                <div class="text-center">
+                    <p class="mb-0">
+                        <span data-i18n="already_have_account">Already have an account?</span>
+                        <a href="{{ url_for('hospital_login') }}" class="text-primary fw-bold">
+                            Hospital Login
+                        </a>
+                    </p>
+                    <p class="mt-2 mb-0">
+                        <span>Are you a donor?</span>
+                        <a href="{{ url_for('register') }}" class="text-danger fw-bold">
+                            <span data-i18n="register_as_donor">Register as Donor</span>
+                        </a>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Hospital Code Help -->
+<div class="row justify-content-center mt-4">
+    <div class="col-lg-7 col-md-9">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0">
+                    <i class="fas fa-question-circle me-2"></i>
+                    Need Help with Hospital Code?
+                </h6>
+            </div>
+            <div class="card-body">
+                <p class="mb-2">Hospital codes are provided to verified medical facilities. If you don't have a code:</p>
+                <ul class="mb-3">
+                    <li>Contact your hospital administrator</li>
+                    <li>Email us at support@bloodlink.com</li>
+                    <li>Call our support line: +91-XXXX-XXXX</li>
+                </ul>
+                <small class="text-muted">
+                    <i class="fas fa-shield-alt me-1"></i>
+                    This verification process ensures the security and authenticity of our hospital network.
+                </small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Form validation
+document.getElementById('hospitalRegisterForm').addEventListener('submit', function(e) {
+    const password = document.getElementById('password').value;
+    const email = document.getElementById('email').value;
+    const phone = document.getElementById('contact_number').value;
+    const hospitalCode = document.getElementById('hospital_code').value;
+    
+    let isValid = true;
+    
+    // Password validation
+    if (password.length < 6) {
+        document.getElementById('password').classList.add('is-invalid');
+        isValid = false;
+    }
+    
+    // Email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+        document.getElementById('email').classList.add('is-invalid');
+        isValid = false;
+    }
+    
+    // Phone validation
+    const phoneRegex = /^[0-9]{10}$/;
+    if (!phoneRegex.test(phone)) {
+        document.getElementById('contact_number').classList.add('is-invalid');
+        isValid = false;
+    }
+    
+    // Hospital code validation
+    if (hospitalCode.length < 3) {
+        document.getElementById('hospital_code').classList.add('is-invalid');
+        isValid = false;
+    }
+    
+    if (!isValid) {
+        e.preventDefault();
+    }
+});
+
+// Remove invalid class on input
+document.querySelectorAll('.form-control').forEach(input => {
+    input.addEventListener('input', function() {
+        this.classList.remove('is-invalid');
+    });
+});
+
+// Hospital code format helper
+document.getElementById('hospital_code').addEventListener('input', function() {
+    this.value = this.value.toUpperCase();
+});
+</script>
+{% endblock %}

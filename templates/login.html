@@ -1,0 +1,125 @@
+{% extends "base.html" %}
+
+{% block title %}Login - BloodLink{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-5 col-md-7">
+        <div class="card shadow">
+            <div class="card-header bg-danger text-white text-center py-4">
+                <h3 class="mb-0">
+                    <i class="fas fa-sign-in-alt me-2"></i>
+                    <span data-i18n="login">Login</span>
+                </h3>
+            </div>
+            <div class="card-body p-5">
+                <form method="POST" id="loginForm">
+                    <div class="mb-4">
+                        <div class="form-floating">
+                            <input type="email" class="form-control" id="email" name="email" placeholder="Email Address" required>
+                            <label for="email" data-i18n="email">Email Address</label>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <div class="form-floating">
+                            <input type="password" class="form-control" id="password" name="password" placeholder="Password" required>
+                            <label for="password" data-i18n="password">Password</label>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="remember" name="remember">
+                            <label class="form-check-label" for="remember">
+                                Remember me
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-danger btn-lg w-100 mb-3">
+                        <i class="fas fa-sign-in-alt me-2"></i>
+                        <span data-i18n="login">Login</span>
+                    </button>
+                </form>
+                
+                <hr class="my-4">
+                
+                <div class="text-center">
+                    <p class="mb-2">
+                        <span data-i18n="dont_have_account">Don't have an account?</span>
+                        <a href="{{ url_for('register') }}" class="text-danger fw-bold">
+                            <span data-i18n="register_now">Register Now</span>
+                        </a>
+                    </p>
+                    <p class="mb-0">
+                        <span>Are you a hospital?</span>
+                        <a href="{{ url_for('hospital_login') }}" class="text-primary fw-bold">
+                            Hospital Login
+                        </a>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Additional Login Options -->
+<div class="row justify-content-center mt-4">
+    <div class="col-lg-5 col-md-7">
+        <div class="card">
+            <div class="card-body text-center">
+                <h6 class="card-title mb-3">Quick Access</h6>
+                <div class="row g-2">
+                    <div class="col-6">
+                        <a href="{{ url_for('register') }}" class="btn btn-outline-danger w-100">
+                            <i class="fas fa-user-plus me-1"></i>
+                            <small>New Donor</small>
+                        </a>
+                    </div>
+                    <div class="col-6">
+                        <a href="{{ url_for('hospital_register') }}" class="btn btn-outline-primary w-100">
+                            <i class="fas fa-hospital me-1"></i>
+                            <small>New Hospital</small>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Form validation
+document.getElementById('loginForm').addEventListener('submit', function(e) {
+    const email = document.getElementById('email').value;
+    const password = document.getElementById('password').value;
+    
+    let isValid = true;
+    
+    // Email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+        document.getElementById('email').classList.add('is-invalid');
+        isValid = false;
+    }
+    
+    // Password validation
+    if (password.length < 1) {
+        document.getElementById('password').classList.add('is-invalid');
+        isValid = false;
+    }
+    
+    if (!isValid) {
+        e.preventDefault();
+    }
+});
+
+// Remove invalid class on input
+document.querySelectorAll('.form-control').forEach(input => {
+    input.addEventListener('input', function() {
+        this.classList.remove('is-invalid');
+    });
+});
+</script>
+{% endblock %}

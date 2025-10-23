@@ -1,0 +1,326 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - BloodLink{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2>
+                <i class="fas fa-tachometer-alt text-danger me-2"></i>
+                <span data-i18n="dashboard">Dashboard</span>
+            </h2>
+            <div>
+                <span class="text-muted">Welcome back, </span>
+                <strong class="text-danger">{{ user.name }}</strong>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Verification Status Alert -->
+{% if user.blood_report_filename %}
+    {% if report_pending %}
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="alert alert-warning pulse">
+                    <div class="d-flex align-items-center">
+                        <i class="fas fa-clock fa-2x me-3"></i>
+                        <div class="flex-grow-1">
+                            <h5 class="alert-heading mb-1" data-i18n="report_pending">Report Pending Approval</h5>
+                            <p class="mb-2" data-i18n="report_pending_message">Your blood test report will be reviewed by the hospital within 30 minutes.</p>
+                            <small class="text-muted">Submitted: {{ user.report_submitted_at.strftime('%B %d, %Y at %I:%M %p') }}</small>
+                        </div>
+                        <button class="btn btn-outline-warning btn-sm" onclick="removeReport()">
+                            <i class="fas fa-times me-1"></i>
+                            <span data-i18n="remove_report">Remove Report</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% elif user.report_status == 'approved' %}
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="alert alert-success">
+                    <div class="d-flex align-items-center">
+                        <i class="fas fa-check-circle fa-2x me-3"></i>
+                        <div>
+                            <h5 class="alert-heading mb-1" data-i18n="verified_donor">Verified Donor</h5>
+                            <p class="mb-0">Your blood test report has been approved. You are now a verified donor!</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% elif user.report_status == 'rejected' %}
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="alert alert-danger">
+                    <div class="d-flex align-items-center">
+                        <i class="fas fa-times-circle fa-2x me-3"></i>
+                        <div>
+                            <h5 class="alert-heading mb-1" data-i18n="rejected_verification">Verification Rejected</h5>
+                            <p class="mb-0">Your blood test report was rejected. Please contact support or upload a new report.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+{% endif %}
+
+<div class="row g-3">
+    <!-- Profile Card -->
+    <div class="col-lg-7">
+        <div class="card profile-card">
+            <div class="card-header bg-danger text-white d-flex justify-content-between align-items-center py-2">
+                <h6 class="mb-0">
+                    <i class="fas fa-user me-2"></i>
+                    <span data-i18n="my_profile">My Profile</span>
+                </h6>
+                <div class="d-flex align-items-center gap-2">
+                    {% if user.is_verified_donor %}
+                        <span class="verification-badge verified">
+                            <i class="fas fa-check-circle"></i>
+                            <span data-i18n="verified_donor">Verified</span>
+                        </span>
+                    {% elif user.blood_report_filename %}
+                        <span class="verification-badge pending">
+                            <i class="fas fa-clock"></i>
+                            <span data-i18n="pending_verification">Pending</span>
+                        </span>
+                    {% else %}
+                        <span class="verification-badge rejected">
+                            <i class="fas fa-exclamation-circle"></i>
+                            <span>Unverified</span>
+                        </span>
+                    {% endif %}
+                    <a href="{{ url_for('edit_profile') }}" class="btn btn-light btn-sm">
+                        <i class="fas fa-edit me-1"></i>
+                        <span data-i18n="edit">Edit</span>
+                    </a>
+                </div>
+            </div>
+            <div class="card-body py-3">
+                <div class="row g-2">
+                    <div class="col-md-6">
+                        <div class="profile-info-compact">
+                            <span class="profile-label" data-i18n="full_name">Full Name:</span>
+                            <span>{{ user.name }}</span>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="profile-info-compact">
+                            <span class="profile-label" data-i18n="blood_group">Blood Group:</span>
+                            <span class="blood-group-badge">{{ user.blood_group }}</span>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="profile-info-compact">
+                            <span class="profile-label" data-i18n="age">Age:</span>
+                            <span>{{ user.age }} years</span>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="profile-info-compact">
+                            <span class="profile-label" data-i18n="gender">Gender:</span>
+                            <span>{{ user.gender }}</span>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="profile-info-compact">
+                            <span class="profile-label" data-i18n="location">Location:</span>
+                            <span>{{ user.city }}, {{ user.state }}</span>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="profile-info-compact">
+                            <span class="profile-label" data-i18n="contact">Contact:</span>
+                            <span>{{ user.contact_number }}</span>
+                        </div>
+                    </div>
+                    {% if user.test_hospital_name %}
+                    <div class="col-12">
+                        <div class="profile-info-compact">
+                            <span class="profile-label" data-i18n="test_hospital_name">Test Hospital:</span>
+                            <span>{{ user.test_hospital_name }}</span>
+                        </div>
+                    </div>
+                    {% endif %}
+                    {% if user.diseases %}
+                    <div class="col-12">
+                        <div class="profile-info-compact">
+                            <span class="profile-label" data-i18n="diseases">Medical Conditions:</span>
+                            <span>{{ user.diseases }}</span>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Blood Usage Stats -->
+    <div class="col-lg-5">
+        <div class="card">
+            <div class="card-header bg-success text-white py-2">
+                <h6 class="mb-0">
+                    <i class="fas fa-chart-bar me-2"></i>
+                    <span data-i18n="blood_usage_stats">Blood Usage Statistics</span>
+                </h6>
+            </div>
+            <div class="card-body text-center py-3" id="dashboardStats">
+                <div class="stats-card-compact mb-2">
+                    <div class="stats-number-compact" id="stat-usage_count">{{ usage_count }}</div>
+                    <div class="small" data-i18n="times_donated">Times Donated</div>
+                </div>
+                
+                {% if usage_records %}
+                    <div class="mb-2">
+                        <small class="text-muted" data-i18n="last_donation">Last Donation:</small><br>
+                        <strong class="small">{{ usage_records[-1].date.strftime('%B %d, %Y') }}</strong>
+                    </div>
+                {% endif %}
+                
+                <div class="mb-2">
+                    <small class="text-muted" data-i18n="verification_status">Status:</small><br>
+                    {% if user.is_verified_donor %}
+                        <span class="badge bg-success">
+                            <i class="fas fa-check-circle me-1"></i>
+                            <span data-i18n="verified_donor">Verified</span>
+                        </span>
+                    {% else %}
+                        <span class="badge bg-warning">
+                            <i class="fas fa-clock me-1"></i>
+                            <span data-i18n="pending_verification">Pending</span>
+                        </span>
+                    {% endif %}
+                </div>
+                
+                <button class="btn btn-outline-success btn-sm" data-bs-toggle="modal" data-bs-target="#usageHistoryModal">
+                    <i class="fas fa-history me-1"></i>
+                    <span data-i18n="view_history">View History</span>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-bolt me-2"></i>
+                    <span data-i18n="quick_actions">Quick Actions</span>
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-3">
+                        <a href="{{ url_for('edit_profile') }}" class="btn btn-outline-danger w-100">
+                            <i class="fas fa-edit me-2"></i>
+                            <span data-i18n="update_profile">Update Profile</span>
+                        </a>
+                    </div>
+                    <div class="col-md-3">
+                        <button class="btn btn-outline-info w-100" onclick="toggleChatbot()">
+                            <i class="fas fa-robot me-2"></i>
+                            <span data-i18n="medical_assistant">Medical Assistant</span>
+                        </button>
+                    </div>
+                    <div class="col-md-3">
+                        <button class="btn btn-outline-success w-100" data-bs-toggle="modal" data-bs-target="#usageHistoryModal">
+                            <i class="fas fa-history me-2"></i>
+                            <span data-i18n="view_history">View History</span>
+                        </button>
+                    </div>
+                    <div class="col-md-3">
+                        <button class="btn btn-outline-secondary w-100" onclick="printPage()">
+                            <i class="fas fa-print me-2"></i>
+                            <span data-i18n="print_profile">Print Profile</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Usage History Modal -->
+<div class="modal fade" id="usageHistoryModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-history me-2"></i>
+                    Blood Donation History
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                {% if usage_records %}
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Hospital</th>
+                                    <th>Notes</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for record in usage_records %}
+                                <tr>
+                                    <td>{{ record.date.strftime('%B %d, %Y') }}</td>
+                                    <td>{{ record.hospital.name }}</td>
+                                    <td>{{ record.notes or 'No notes' }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-info-circle text-muted" style="font-size: 3rem;"></i>
+                        <h5 class="mt-3 text-muted">No donation history yet</h5>
+                        <p class="text-muted">Your blood donation records will appear here once hospitals record your donations.</p>
+                    </div>
+                {% endif %}
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-success" onclick="exportData('csv')">
+                    <i class="fas fa-download me-1"></i>
+                    <span data-i18n="export_csv">Export CSV</span>
+                </button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <span data-i18n="close">Close</span>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Print functionality
+function printPage() {
+    window.print();
+}
+
+// Auto-refresh stats every 5 minutes
+setInterval(function() {
+    if (typeof updateDashboardStats === 'function') {
+        updateDashboardStats();
+    }
+}, 300000);
+
+// Initialize dashboard stats
+document.addEventListener('DOMContentLoaded', function() {
+    if (typeof initializeDashboardStats === 'function') {
+        initializeDashboardStats();
+    }
+});
+</script>
+{% endblock %}
