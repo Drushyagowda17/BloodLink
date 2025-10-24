@@ -541,13 +541,15 @@ class BloodUsage(db.Model):
 
 @login_manager.user_loader
 def load_user(user_id):
+    # Check if it's a hospital first (to avoid id conflicts)
+    hospital = Hospital.query.get(int(user_id))
+    if hospital:
+        return hospital
     # Check if it's a regular user
     user = User.query.get(int(user_id))
     if user:
         return user
-    # Check if it's a hospital
-    hospital = Hospital.query.get(int(user_id))
-    return hospital
+    return None
 
 # Helper function to get valid hospital codes
 def get_valid_hospital_codes():
@@ -630,15 +632,22 @@ def login():
     if request.method == 'POST':
         email = request.form['email']
         password = request.form['password']
-        
+
+        # First, check if this email belongs to a hospital - always redirect hospitals to hospital login
+        hospital = Hospital.query.filter_by(email=email).first()
+        if hospital:
+            flash('This account is registered as a hospital. Please use the Hospital Login.', 'warning')
+            return redirect(url_for('hospital_login'))
+
+        # Then, attempt to authenticate as a regular user (donor/patient)
         user = User.query.filter_by(email=email).first()
-        
         if user and bcrypt.check_password_hash(user.password_hash, password):
             login_user(user)
             return redirect(url_for('dashboard'))
-        else:
-            flash('Invalid email or password', 'error')
-    
+
+        # Fallback invalid credentials
+        flash('Invalid email or password', 'error')
+
     return render_template('login.html')
 
 @app.route('/Hospital-Register', methods=['GET', 'POST'])
