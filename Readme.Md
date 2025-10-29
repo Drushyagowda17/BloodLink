@@ -254,7 +254,7 @@ Multi-language support
 Responsive UI
 
 Medical assistant chatbot
-
+ola
 Dark/Light theme
 
 Note: This is a college mini-project built for educational and demonstration purposes. For production use, add rigorous security, proper API integrations, logging, and comprehensive testing.
