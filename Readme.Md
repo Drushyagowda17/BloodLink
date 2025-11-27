@@ -58,13 +58,9 @@ BloodLink is a web application that connects blood donors with hospitals and med
 ```bash
 git clone https://github.com/Drushyagowda17/BloodLink.git
 cd BloodLink
+Or download the Zip manually 
 
-Or download the ZIP manually.
-
-
----
-
-2️⃣ Install Dependencies
+⿢ Install Dependencies
 
 Using requirements.txt:
 
@@ -74,94 +70,47 @@ Or manually:
 
 python -m pip install flask flask_sqlalchemy flask_bcrypt flask_login
 
-
----
-
-3️⃣ Configuration (Optional)
-
+⿣ Configuration (Optional)
 Edit these in app.py if needed:
-
 SECRET_KEY
-
 HOSPITAL_CODES = 'HOSP001,HOSP002,HOSP003,AIIMS001,SGPGI001,KIMS001'
-
 Chatbot API key (optional)
-
-
 > Production deployments should move these to environment variables.
-
-
-
-
----
 
 ❗ IMPORTANT — Start Fresh Database
 
 Before first run:
-
 rm instance/bloodlink.db
 
-
----
-
-4️⃣ Run the Application
+⿤ Run the Application
 
 python app.py
-
 Then open:
-
 http://localhost:5000
-
-
----
 
 📚 Usage Guide
 
 🔰 First-Time Setup
-
 1. Run the app
-
-
 2. Database auto-creates
-
-
 3. Open browser
-
-
 4. Register as donor/hospital
-
-
-
-
----
 
 👤 Donor Workflow
 
 Register at /register
-
 Login
-
 Update profile
-
 Access dashboard, see donation history
 
 
 🏥 Hospital Workflow
 
 Register at /Hospital-Register using a valid code
-
 Login at /Hospital-Login
-
 Search donors with filters
-
 Record blood usage
-
 Manage donor interactions
-
-
-
----
-
 🗂 File Structure
 
 BloodLink/
@@ -192,195 +141,102 @@ BloodLink/
     └── error.html              # Error templates
 
 
----
-
 ⚙ Configuration
 
 App Settings (inside app.py)
-
 SECRET_KEY – session security
-
-HOSPITAL_CODES – comma-separated list
-
+HOSPITAL_CODES – HOSP001,HOSP002,HOSP003,AIIMS001,SGPGI001,KIMS001
 Chatbot API key (optional)
-
 
 Database Behavior
 
 SQLite database autogenerates
-
 All tables created by SQLAlchemy
-
 Stored as bloodlink.db
-
-
-
----
 
 🎨 Customization
 
 Theme
 
 Edit CSS variables in:
-
 static/css/styles.css
-
 Add Languages
-
 Add new JSON translation files in:
-
 static/i18n/
-
 Update Hospital Codes
 
 Modify:
 
-HOSPITAL_CODES = ""
+HOSPITAL_CODES = "HOSP001,HOSP002,HOSP003,AIIMS001,SGPGI001,KIMS001"
 
 inside app.py.
-
-
----
 
 🔐 Security Features
 
 Hashed passwords (bcrypt with salt)
-
 Flask-Login session security
-
 Access-level control (donor/hospital)
-
 Input validation
-
 CSRF-safe patterns
-
 HTTPS recommended for deployment
-
-
-
----
 
 🌐 Browser Support
 
 Chrome 90+
-
 Firefox 88+
-
 Safari 14+
-
 Edge 90+
-
 Mobile (Android/iOS latest)
-
 
 Supports:
 
 ES6
-
 CSS Grid
-
 Flexbox
-
 Local Storage
-
-
-
----
 
 🛠 Troubleshooting
 
 Database not created?
-
 Ensure Python has write permissions
-
 Check if bloodlink.db appears
-
-
 Import errors?
-
 pip list
-
 Port already in use?
-
 Modify:
 
 app.run(debug=True, port=5001)
-
 Chatbot not working?
-
 Check API key
-
 Ensure stable internet
-
-
 Language Not Loading?
-
 Ensure *.json files exist and are valid
-
-
-
----
 
 🤝 Contributing
 
 1. Fork repository
-
-
 2. Create new branch
-
-
 3. Commit changes
-
-
 4. Test fully
-
-
 5. Create Pull Request
-
-
-
-
----
 
 📄 License
 
 MIT License — free to use, modify, and distribute.
 
-
----
-
 📬 Support
 
 Email: drushyagmgowda@gmail.com
-
 Issues: Create one in GitHub Issues
-
-
-
----
 
 📝 Changelog
 
 v1.0.0
-
 Initial Release
-
 Donor & Hospital Management
-
 Multi-language support
-
 Responsive UI
-
 Medical Assistant Chatbot
-
 Dark/Light Theme
 
-
-
----
-
 > ⚠ Note: This is a college mini-project. For production: add robust security, API integrations, logging, backups, and thorough testing.
-
-
-
----
