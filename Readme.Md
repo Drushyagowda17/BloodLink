@@ -73,12 +73,12 @@ Open app.py and adjust constants/settings as needed, for example:
 
 SECRET_KEY
 
-HOSPITAL_CODES (comma-separated list)
+'HOSPITAL_CODES', 'HOSP001,HOSP002,HOSP003,AIIMS001,SGPGI001,KIMS001'
 
 Chatbot provider/API key variables (if used)
 
 For learning/demo use, in-code configuration is fine. For production, move secrets to a secure store or environment variables managed by the host.
-
+(IMPORTANT NOTICE ::::: BEFORE RUNNING THE PROJECT RUN THE COMMAND "rm instance/bloodlink.db"  TO CLEAR THE DATABASE AND START FROM A FRESH ONE )
 4) Run the Application
 python app.py
 

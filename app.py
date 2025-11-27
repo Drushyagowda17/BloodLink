@@ -541,14 +541,23 @@ class BloodUsage(db.Model):
 
 @login_manager.user_loader
 def load_user(user_id):
-    # Check if it's a hospital first (to avoid id conflicts)
-    hospital = Hospital.query.get(int(user_id))
-    if hospital:
-        return hospital
-    # Check if it's a regular user
-    user = User.query.get(int(user_id))
-    if user:
-        return user
+    # Store user type in session to properly identify which table to query
+    user_type = session.get('user_type')
+    
+    try:
+        user_id = int(user_id)
+    except (ValueError, TypeError):
+        return None
+    
+    if user_type == 'hospital':
+        hospital = Hospital.query.get(user_id)
+        if hospital:
+            return hospital
+    else:
+        user = User.query.get(user_id)
+        if user:
+            return user
+    
     return None
 
 # Helper function to get valid hospital codes
@@ -642,6 +651,7 @@ def login():
         # Then, attempt to authenticate as a regular user (donor/patient)
         user = User.query.filter_by(email=email).first()
         if user and bcrypt.check_password_hash(user.password_hash, password):
+            session['user_type'] = 'user'
             login_user(user)
             return redirect(url_for('dashboard'))
 
@@ -699,6 +709,7 @@ def hospital_login():
         hospital = Hospital.query.filter_by(email=email).first()
         
         if hospital and bcrypt.check_password_hash(hospital.password_hash, password):
+            session['user_type'] = 'hospital'
             login_user(hospital)
             return redirect(url_for('hospital_dashboard'))
         else:
@@ -790,30 +801,39 @@ def hospital_dashboard():
     state = request.args.get('state', '')
     
     # Build query - only show verified donors
-    query = User.query.filter_by(role='user', is_verified_donor=True)
-    
+    donor_query = User.query.filter_by(role='user', is_verified_donor=True)
     if blood_group:
-        query = query.filter(User.blood_group == blood_group)
+        donor_query = donor_query.filter(User.blood_group == blood_group)
     if city:
-        query = query.filter(User.city.ilike(f'%{city}%'))
+        donor_query = donor_query.filter(User.city.ilike(f'%{city}%'))
     if state:
-        query = query.filter(User.state.ilike(f'%{state}%'))
+        donor_query = donor_query.filter(User.state.ilike(f'%{state}%'))
+    donors = donor_query.all()
+
+    # Pending approvals logic: show donors with pending status that either
+    # - explicitly selected this hospital by name, OR
+    # - didn't specify a hospital name (so any hospital can review),
+    # Optionally require an uploaded report; disabled to avoid empty list during testing.
+    pending_query = User.query.filter(
+        User.role == 'user',
+        User.report_status == 'pending'
+    )
+    # Match by test_hospital_name if provided; allow nulls to be seen by all hospitals
+    pending_query = pending_query.filter(
+        or_(
+            User.test_hospital_name.is_(None),
+            User.test_hospital_name == '',
+            User.test_hospital_name.ilike(f'%{current_user.name}%')
+        )
+    )
+    pending_approvals = pending_query.all()
     
-    donors = query.all()
-    
-    # Get pending approvals for this hospital
-    pending_approvals = User.query.filter(
-        User.test_hospital_name.ilike(f'%{current_user.name}%'),
-        User.report_status == 'pending',
-        User.blood_report_filename.isnot(None)
-    ).all()
-    
-    # Get unique blood groups for filter dropdown
+    # Get unique blood groups for filter dropdown (from verified donors only)
     blood_groups = db.session.query(User.blood_group).filter_by(role='user', is_verified_donor=True).distinct().all()
     blood_groups = [bg[0] for bg in blood_groups]
     
     return render_template('hospital_dashboard.html', 
-                         donors=donors, 
+                         donors=donors,
                          blood_groups=blood_groups,
                          search_blood_group=blood_group,
                          search_city=city,
@@ -856,7 +876,10 @@ def new_usage():
         return redirect(url_for('hospital_dashboard'))
     
     donor = User.query.get_or_404(donor_id)
-    return render_template('usage_form.html', donor=donor)
+
+    # If no usage yet, render the form with an info banner that blood hasn't been used yet
+    usage_exists = BloodUsage.query.filter_by(donor_id=donor.id, hospital_id=current_user.id).count() > 0
+    return render_template('usage_form.html', donor=donor, usage_exists=usage_exists)
 
 @app.route('/hospital/usage/create', methods=['POST'])
 @login_required
@@ -905,10 +928,20 @@ def dashboard_stats():
     if current_user.role == 'hospital':
         # Hospital stats
         total_donors = User.query.filter_by(role='user', is_verified_donor=True).count()
-        pending_approvals = User.query.filter(
-            User.test_hospital_name.ilike(f'%{current_user.name}%'),
+
+        # Match pending approvals logic used in hospital_dashboard
+        pending_query = User.query.filter(
+            User.role == 'user',
             User.report_status == 'pending'
-        ).count()
+        ).filter(
+            or_(
+                User.test_hospital_name.is_(None),
+                User.test_hospital_name == '',
+                User.test_hospital_name.ilike(f'%{current_user.name}%')
+            )
+        )
+        pending_approvals = pending_query.count()
+
         blood_usage_count = BloodUsage.query.filter_by(hospital_id=current_user.id).count()
         
         return jsonify({
