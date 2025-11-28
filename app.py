@@ -12,6 +12,7 @@ from collections import defaultdict
 from sqlalchemy import func, and_, or_
 from werkzeug.utils import secure_filename
 import uuid
+import requests # Added for API calls
 
 # Load environment variables
 load_dotenv()
@@ -48,20 +49,31 @@ class ChatbotAdapter:
         
     def send(self, message: str, user_context: dict) -> str:
         try:
-            # Use free Hugging Face Inference API for medical questions
+            # Check for direct medical keywords first to use our custom safe responses
+            # This ensures we prioritize our safe, verified answers over AI generation for critical topics
+            if self._should_use_fallback(message):
+                return self._get_medical_response(message)
+
+            # Use free Hugging Face Inference API for general medical questions
             if self.provider == 'huggingface':
                 return self._query_huggingface(message)
             elif self.provider == 'openai' and self.api_key:
                 return self._query_openai(message)
             else:
-                return self._get_fallback_response(message)
+                return self._get_medical_response(message)
         except Exception as e:
             print(f"Chatbot error: {e}")
-            return self._get_fallback_response(message)
+            return self._get_medical_response(message)
     
+    def _should_use_fallback(self, message: str) -> bool:
+        # keywords that trigger our custom logic immediately
+        # Added general health keywords: fever, cold, flu, headache, diet, sleep, stress, water
+        keywords = ['blood', 'donate', 'donation', 'eligible', 'age', 'weight', 'height', 
+                   'process', 'preparation', 'after', 'care', 'emergency', 'help', 'hello', 'hi',
+                   'fever', 'cold', 'flu', 'headache', 'diet', 'nutrition', 'water', 'sleep', 'stress']
+        return any(k in message.lower() for k in keywords)
+
     def _query_huggingface(self, message: str) -> str:
-        import requests
-        
         # Use a medical-focused model from Hugging Face
         model_name = "microsoft/DialoGPT-medium"
         url = f"{self.base_url}{model_name}"
@@ -107,8 +119,6 @@ Response:"""
     
     def _query_openai(self, message: str) -> str:
         # OpenAI integration (if API key is provided)
-        import requests
-        
         headers = {
             "Authorization": f"Bearer {self.api_key}",
             "Content-Type": "application/json"
@@ -132,7 +142,7 @@ Response:"""
         
         try:
             response = requests.post("https://api.openai.com/v1/chat/completions", 
-                                   headers=headers, json=payload, timeout=10)
+                                     headers=headers, json=payload, timeout=10)
             if response.status_code == 200:
                 result = response.json()
                 return result['choices'][0]['message']['content']
@@ -142,345 +152,436 @@ Response:"""
         return self._get_medical_response(message)
     
     def _get_medical_response(self, message: str) -> str:
-        """Generate comprehensive medical responses based on keywords and symptoms"""
+        """Generate comprehensive blood donation responses based on keywords"""
         message_lower = message.lower()
+
+        # Check for user intent (Short vs Long answer)
+        ask_why = any(w in message_lower for w in ['why', 'reason', 'cause', 'explain', 'detail', 'more info', 'how come'])
         
-        # Fever and temperature related
-        if any(word in message_lower for word in ['fever', 'temperature', 'hot', 'burning', 'chills', 'shivering']):
-            return """**Fever Management:**
+        # 0. Greetings
+        if any(word in message_lower for word in ['hello', 'hi', 'hey', 'greetings', 'morning', 'afternoon', 'evening']):
+            return "👋 Hello! I'm your BloodLink assistant. I can answer questions about blood donation eligibility, process, and safety. How can I help you today?"
 
-🌡️ **Immediate Care:**
-• Rest and stay hydrated with water, clear broths, or electrolyte solutions
-• Take temperature every 4-6 hours
-• Use acetaminophen or ibuprofen as directed on package
-• Apply cool, damp cloths to forehead and wrists
-• Wear light, breathable clothing
-
-🚨 **Seek immediate medical attention if:**
-• Temperature above 103°F (39.4°C)
-• Fever lasts more than 3 days
-• Difficulty breathing or chest pain
-• Severe headache or neck stiffness
-• Persistent vomiting or dehydration signs
-
-💡 **Prevention:** Get adequate rest, maintain good hygiene, and stay hydrated.
-
-⚠️ This is general information. Consult a healthcare provider for persistent or high fever."""
-
-        # Cold and flu symptoms
-        elif any(word in message_lower for word in ['cold', 'flu', 'cough', 'runny nose', 'congestion', 'sore throat', 'sneezing']):
-            return """**Cold & Flu Care:**
-
-🤧 **Symptom Relief:**
-• Rest and sleep 7-9 hours daily
-• Drink warm liquids (tea, soup, warm water with honey)
-• Use saline nasal rinses for congestion
-• Gargle with warm salt water for sore throat
-• Use humidifier or breathe steam from hot shower
-
-💊 **Medications:**
-• Pain relievers: acetaminophen or ibuprofen
-• Decongestants for stuffy nose (short-term use)
-• Throat lozenges for sore throat
-
-🚨 **See a doctor if:**
-• Symptoms worsen after 7-10 days
-• High fever (>101.3°F/38.5°C)
-• Difficulty breathing or wheezing
-• Severe headache or sinus pain
-
-⚠️ Antibiotics don't work for viral infections. Consult healthcare providers for proper diagnosis."""
-
-        # Headache and pain
-        elif any(word in message_lower for word in ['headache', 'head pain', 'migraine', 'pain', 'ache', 'hurt']):
-            return """**Headache & Pain Relief:**
-
-💊 **Immediate Relief:**
-• Take over-the-counter pain relievers (acetaminophen, ibuprofen, aspirin)
-• Apply cold compress to forehead or warm compress to neck
-• Rest in a quiet, dark room
-• Stay hydrated - drink plenty of water
-• Gentle neck and shoulder massage
-
-🧘 **Prevention & Management:**
-• Maintain regular sleep schedule (7-9 hours)
-• Manage stress through relaxation techniques
-• Avoid known triggers (certain foods, bright lights)
-• Regular exercise and healthy diet
-• Limit screen time
-
-🚨 **Emergency signs - seek immediate help:**
-• Sudden, severe headache ("worst headache of life")
-• Headache with fever, stiff neck, confusion
-• Headache after head injury
-• Vision changes or difficulty speaking
-• Headache with weakness or numbness
-
-⚠️ For chronic or recurring headaches, consult a healthcare provider for proper evaluation."""
-
-        # Stomach and digestive issues
-        elif any(word in message_lower for word in ['stomach', 'nausea', 'vomiting', 'diarrhea', 'constipation', 'indigestion', 'bloating']):
-            return """**Digestive Health:**
-
-🤢 **For Nausea/Vomiting:**
-• Sip clear fluids slowly (water, ginger tea, clear broths)
-• Eat bland foods (BRAT diet: bananas, rice, applesauce, toast)
-• Avoid dairy, fatty, or spicy foods
-• Rest and avoid strong odors
-
-💩 **For Diarrhea:**
-• Stay hydrated with oral rehydration solutions
-• Eat binding foods (bananas, rice, toast)
-• Avoid dairy, caffeine, and high-fiber foods temporarily
-• Probiotics may help restore gut bacteria
-
-🚫 **For Constipation:**
-• Increase fiber intake (fruits, vegetables, whole grains)
-• Drink plenty of water (8-10 glasses daily)
-• Regular physical activity
-• Establish regular bathroom routine
-
-🚨 **Seek medical care if:**
-• Severe dehydration signs
-• Blood in vomit or stool
-• Severe abdominal pain
-• Symptoms persist >3 days
-
-⚠️ Persistent digestive issues require medical evaluation."""
-
-        # Skin conditions
-        elif any(word in message_lower for word in ['rash', 'itchy', 'skin', 'allergy', 'hives', 'eczema', 'acne']):
-            return """**Skin Care & Conditions:**
-
-🧴 **General Skin Care:**
-• Keep skin clean and moisturized
-• Use gentle, fragrance-free products
-• Avoid harsh scrubbing or hot water
-• Protect from sun with SPF 30+ sunscreen
-• Stay hydrated
-
-🔴 **For Rashes/Irritation:**
-• Apply cool, damp cloths to affected area
-• Use over-the-counter hydrocortisone cream
-• Take antihistamines for itching (Benadryl, Claritin)
-• Avoid scratching to prevent infection
-• Identify and avoid triggers
-
-🌟 **For Acne:**
-• Gentle cleansing twice daily
-• Use non-comedogenic products
-• Avoid picking or squeezing
-• Consider over-the-counter treatments (benzoyl peroxide, salicylic acid)
-
-🚨 **See a doctor if:**
-• Rash spreads rapidly or covers large area
-• Signs of infection (pus, red streaks, fever)
-• Severe itching interfering with sleep
-• Rash doesn't improve in 1-2 weeks
-
-⚠️ Persistent or severe skin conditions need professional dermatological care."""
-
-        # Sleep issues
-        elif any(word in message_lower for word in ['sleep', 'insomnia', 'tired', 'fatigue', 'exhausted', 'sleepy']):
-            return """**Sleep & Energy Management:**
-
-😴 **Better Sleep Habits:**
-• Maintain consistent sleep schedule (same bedtime/wake time)
-• Create relaxing bedtime routine
-• Keep bedroom cool, dark, and quiet
-• Avoid screens 1 hour before bed
-• Limit caffeine after 2 PM and alcohol before bed
-
-⚡ **Combat Fatigue:**
-• Get 7-9 hours of quality sleep
-• Regular exercise (but not close to bedtime)
-• Eat balanced meals and stay hydrated
-• Take short naps (20-30 minutes) if needed
-• Manage stress through relaxation techniques
-
-🌙 **Sleep Hygiene Tips:**
-• Use bedroom only for sleep and intimacy
-• If can't sleep within 20 minutes, get up and do quiet activity
-• Avoid large meals, spicy foods before bed
-• Consider relaxation techniques (meditation, deep breathing)
-
-🚨 **Consult a doctor if:**
-• Chronic insomnia (>3 weeks)
-• Excessive daytime sleepiness
-• Loud snoring or breathing interruptions
-• Persistent fatigue despite adequate sleep
-
-⚠️ Sleep disorders require professional evaluation and treatment."""
-
-        # Mental health and stress
-        elif any(word in message_lower for word in ['stress', 'anxiety', 'depression', 'worried', 'sad', 'mental health', 'panic']):
-            return """**Mental Health & Stress Management:**
-
-🧠 **Stress Relief Techniques:**
-• Deep breathing exercises (4-7-8 technique)
-• Regular physical exercise
-• Meditation or mindfulness practices
-• Connect with friends and family
-• Engage in hobbies you enjoy
-
-💚 **Self-Care Strategies:**
-• Maintain regular sleep schedule
-• Eat nutritious, balanced meals
-• Limit alcohol and avoid drugs
-• Set realistic goals and priorities
-• Practice gratitude and positive thinking
-
-🤝 **When to Seek Help:**
-• Persistent sadness or hopelessness
-• Excessive worry interfering with daily life
-• Panic attacks or severe anxiety
-• Thoughts of self-harm
-• Substance abuse as coping mechanism
-
-📞 **Crisis Resources:**
-• National Suicide Prevention Lifeline: 988
-• Crisis Text Line: Text HOME to 741741
-• Emergency services: 911
-
-⚠️ Mental health is as important as physical health. Professional counseling and therapy can be very effective."""
-
-        # Blood donation specific
-        elif any(word in message_lower for word in ['blood', 'donate', 'donation', 'donor']):
-            return """**Blood Donation Guidelines:**
-
-🩸 **Eligibility Requirements:**
-• Age 17-65 years (varies by location)
-• Weight at least 110 lbs (50 kg)
-• Good general health
-• Hemoglobin levels within normal range
-• No recent illness or infections
-
-⏰ **Donation Frequency:**
-• Whole blood: every 8-12 weeks
-• Platelets: every 2 weeks (up to 24 times/year)
-• Plasma: every 4 weeks
-
-🥗 **Before Donation:**
-• Eat iron-rich foods (spinach, red meat, beans)
-• Stay well-hydrated
-• Get good night's sleep
-• Avoid alcohol 24 hours before
-• Bring valid ID
-
-🍪 **After Donation:**
-• Rest for 10-15 minutes
-• Drink plenty of fluids
-• Eat snacks provided
-• Avoid heavy lifting for 24 hours
-• Keep bandage on for 4-6 hours
-
-⚠️ Always follow guidelines from certified blood donation centers."""
-
-        # Exercise and fitness
-        elif any(word in message_lower for word in ['exercise', 'workout', 'fitness', 'muscle', 'weight loss', 'gym']):
-            return """**Exercise & Fitness Guidelines:**
-
-🏃 **Getting Started:**
-• Start slowly and gradually increase intensity
-• Aim for 150 minutes moderate exercise weekly
-• Include both cardio and strength training
-• Warm up before and cool down after exercise
-• Listen to your body and rest when needed
-
-💪 **Types of Exercise:**
-• Cardio: walking, running, cycling, swimming
-• Strength: weight lifting, resistance bands, bodyweight exercises
-• Flexibility: yoga, stretching, tai chi
-• Balance: yoga, pilates, balance exercises
-
-🥗 **Nutrition for Fitness:**
-• Eat balanced meals with protein, carbs, healthy fats
-• Stay hydrated before, during, and after exercise
-• Pre-workout: light snack 30-60 minutes before
-• Post-workout: protein and carbs within 2 hours
-
-⚠️ **Safety Tips:**
-• Consult doctor before starting new exercise program
-• Use proper form to prevent injury
-• Wear appropriate gear and footwear
-• Stop if you feel pain, dizziness, or shortness of breath
-
-⚠️ Individual fitness needs vary. Consider consulting a fitness professional or healthcare provider."""
-
-        # General health and wellness
-        else:
-            # Try to provide relevant response based on any health-related keywords
-            health_keywords = ['health', 'wellness', 'medicine', 'doctor', 'hospital', 'treatment', 'symptoms', 'sick', 'illness']
-            if any(keyword in message_lower for keyword in health_keywords):
-                return f"""**General Health Information:**
-
-Based on your question about "{message}", here are some general health guidelines:
-
-🏥 **When to See a Healthcare Provider:**
-• Persistent or worsening symptoms
-• Symptoms interfering with daily activities
-• Concerns about your health
-• Preventive care and regular check-ups
-• Medication management
-
-🌟 **General Wellness Tips:**
-• Maintain balanced diet with fruits, vegetables, whole grains
-• Stay physically active (150 minutes/week moderate exercise)
-• Get adequate sleep (7-9 hours nightly)
-• Manage stress through healthy coping strategies
-• Stay hydrated (8-10 glasses water daily)
-• Avoid smoking and limit alcohol
-• Practice good hygiene
-
-📋 **Preventive Care:**
-• Regular health screenings
-• Vaccinations as recommended
-• Dental and eye exams
-• Monitor blood pressure and cholesterol
-• Know your family medical history
-
-🚨 **Emergency Warning Signs:**
+        # 1. Emergency (Always Priority - No short version for safety)
+        if any(word in message_lower for word in ['emergency', 'chest pain', 'breathing', 'bleeding', 'stroke', 'heart attack', 'call 100/108', 'unconscious', 'trauma']):
+            return """🚨 **Emergency Warning Signs:**
 • Chest pain or difficulty breathing
 • Severe bleeding or trauma
 • Loss of consciousness
 • Severe allergic reactions
-• Signs of stroke (FAST: Face drooping, Arm weakness, Speech difficulty, Time to call 911)
+• Signs of stroke (FAST: Face drooping, Arm weakness, Speech difficulty, Time to call 100/108)
 
-⚠️ This is general information only. For specific health concerns, always consult qualified healthcare professionals who can provide personalized medical advice based on your individual situation."""
-            
+⚠️ **Call 100/108 immediately.** This information is for reference only."""
+
+        # 2. Blood donation eligibility and age
+        elif any(word in message_lower for word in ['age limit', 'how old', 'minimum age', 'maximum age', 'age requirement', 'age to donate']):
+            if not ask_why:
+                return """**Blood Donation Age Limits:**
+• **Minimum:** 18 years old
+• **Maximum:** 65 years old
+• **Note:** First-time donors over 60 need doctor evaluation.
+• **Regular donors:** Can continue past 65 if healthy."""
             else:
-                return f"""**Health Information Request:**
+                return """**Blood Donation Age Requirements (Detailed):**
+
+📋 **Eligibility Criteria:**
+• Minimum age: 18 years old
+• Maximum age: 65 years old (may vary by location)
+• First-time donors over 60 may need additional evaluation
+
+✅ **Why These Limits:**
+• Under 18: Body still developing, blood volume may not be adequate
+• Over 65: Increased health risks, slower recovery time
+• Each donation removes about 450-500ml of blood
+
+⚕️ **Age-Related Considerations:**
+• 18-24: Ideal age group, quick recovery
+• 25-45: Prime donation years
+• 46-60: Regular health check-ups recommended
+• 60+: Doctor's approval often required
+
+⚠️ Always consult with blood bank staff about age-specific requirements in your region."""
+
+        # 3. When can I donate blood / frequency
+        elif any(word in message_lower for word in ['when can i donate', 'how often', 'frequency', 'how many times', 'donation interval', 'again']):
+            if not ask_why:
+                return """**Donation Frequency:**
+• **Whole Blood (Men):** Every 3 months
+• **Whole Blood (Women):** Every 4 months
+• **Platelets:** Every 2 weeks
+• **Plasma:** Every 4 weeks"""
+            else:
+                return """**Blood Donation Frequency (Detailed):**
+
+🩸 **Whole Blood Donation:**
+• Men: Every 3 months (12 weeks)
+• Women: Every 4 months (16 weeks)
+• Minimum 8-12 weeks between donations
+
+🔄 **Other Donation Types:**
+• Platelets: Every 2 weeks (up to 24 times/year)
+• Plasma: Every 4 weeks
+• Double Red Cells: Every 6 months
+
+⏰ **Why Wait Between Donations:**
+• Body needs time to replenish blood cells
+• Iron levels must return to normal
+• Hemoglobin restoration takes time
+• Prevents anemia and fatigue
+
+📅 **Recovery Timeline:**
+• 24 hours: Plasma volume restored
+• 2 weeks: Red blood cells increase
+• 8 weeks: Full blood volume restored
+
+⚠️ Always check with your local blood bank for specific guidelines."""
+
+        # 4. Blood donation preparation / before donating
+        elif any(word in message_lower for word in ['before donating', 'preparation', 'prepare', 'what to do before', 'eat before', 'drink before']):
+            if not ask_why:
+                return """**Before Donating:**
+• **Eat:** Iron-rich foods and a healthy meal 2-3 hours before.
+• **Drink:** 16 oz of water.
+• **Avoid:** Fatty foods, alcohol (24h), and smoking (1h).
+• **Bring:** ID and medication list."""
+            else:
+                return """**Blood Donation Preparation (Detailed):**
+
+🥗 **24 Hours Before:**
+• Eat iron-rich foods (spinach, red meat, beans, fortified cereals)
+• Stay well-hydrated (8-10 glasses of water)
+• Get adequate sleep (7-8 hours)
+• Avoid alcohol consumption
+
+🍽️ **Day of Donation:**
+• Eat a healthy meal 2-3 hours before
+• Include protein and complex carbohydrates
+• Drink extra fluids (16 oz water 2 hours before)
+• Avoid fatty foods (delays testing)
+
+☕ **What to Avoid:**
+• Fatty or greasy foods (affects blood quality)
+• Alcohol (24 hours before)
+• Aspirin (48 hours before - for platelet donation)
+• Smoking (1 hour before and after)
+
+✅ **What to Bring:**
+• Valid photo ID
+• List of current medications
+• Blood bank donor card
+• Emergency contact information
+
+⚠️ Following these guidelines ensures a safe, comfortable donation experience."""
+
+        # 5. After blood donation / post-donation care
+        elif any(word in message_lower for word in ['after donation', 'after donating', 'post donation', 'recovery', 'what to do after']):
+            if not ask_why:
+                return """**After Care:**
+• **Immediate:** Rest 15 mins, eat snacks, keep bandage on 4h.
+• **Next 24h:** Drink extra fluids, avoid heavy lifting/exercise.
+• **Diet:** Eat iron-rich foods (meat, spinach)."""
+            else:
+                return """**After Blood Donation Care (Detailed):**
+
+⏱️ **Immediate Care (First 30 Minutes):**
+• Rest for 10-15 minutes in observation area
+• Eat snacks and drink fluids provided
+• Keep bandage on for 4-6 hours
+• Avoid sudden movements
+
+🥤 **First 24 Hours:**
+• Drink extra fluids (8-10 glasses of water)
+• Avoid alcohol for 24 hours
+• No heavy lifting or strenuous exercise
+• No hot baths or saunas
+• Keep donation site clean and dry
+
+🚫 **Activities to Avoid:**
+• Heavy lifting (24 hours)
+• Vigorous exercise (24 hours)
+• Swimming (24 hours)
+• Operating heavy machinery (if feeling dizzy)
+
+⚠️ **Warning Signs - Contact Doctor If:**
+• Continued bleeding from puncture site
+• Severe bruising or swelling
+• Persistent dizziness or fainting
+• Signs of infection
+
+✅ Most people feel normal within a few hours."""
+
+        # 6. Blood types and compatibility
+        elif any(word in message_lower for word in ['blood type', 'blood group', 'compatibility', 'universal donor', 'universal recipient', 'o negative', 'ab positive']):
+            if not ask_why:
+                return """**Blood Types:**
+• **Universal Donor:** O Negative (O-)
+• **Universal Recipient:** AB Positive (AB+)
+• **Most Common:** O Positive (O+)
+• **Rarest:** AB Negative (AB-)"""
+            else:
+                return """**Blood Types and Compatibility (Detailed):**
+
+🩸 **The 8 Blood Types:**
+1. O Positive (O+) - Most common
+2. O Negative (O-) - Universal donor
+3. A Positive (A+)
+4. A Negative (A-)
+5. B Positive (B+)
+6. B Negative (B-)
+7. AB Positive (AB+) - Universal recipient
+8. AB Negative (AB-) - Rarest
+
+🎯 **Universal Roles:**
+• **O Negative:** Can donate red cells to ANYONE.
+• **AB Positive:** Can receive red cells from ANYONE.
+
+📊 **Who Can Donate to Whom:**
+• **O-**: Everyone
+• **O+**: O+, A+, B+, AB+
+• **A-**: A-, A+, AB-, AB+
+• **A+**: A+, AB+
+• **B-**: B-, B+, AB-, AB+
+• **B+**: B+, AB+
+• **AB-**: AB-, AB+
+• **AB+**: AB+ only
+
+🔬 **Why Blood Types Matter:**
+• Antibodies attack incompatible blood cells.
+• Matching prevents serious reactions.
+
+⚠️ Always inform medical staff of your blood type."""
+
+        # 7. Benefits of donating blood
+        elif any(word in message_lower for word in ['benefits', 'why donate', 'advantage', 'good for health', 'why should i']):
+            if not ask_why:
+                return """**Benefits:**
+• Saves up to 3 lives.
+• Free health screening (BP, Hemoglobin).
+• Reduces risk of heart disease.
+• Burns ~650 calories.
+• Psychological satisfaction."""
+            else:
+                return """**Benefits of Blood Donation (Detailed):**
+
+❤️ **Health Benefits for Donors:**
+1. **Heart Health:** Reduces blood viscosity and iron overload, lowering heart disease risk.
+2. **Free Health Screening:** Checks blood pressure, hemoglobin, and screens for diseases.
+3. **Calorie Burn:** Burns ~650 calories per donation; body works to replenish blood.
+4. **Cancer Risk:** May reduce risk by lowering oxidative stress.
+5. **Cell Production:** Stimulates production of new blood cells.
+
+🌟 **Social Benefits:**
+• Save up to 3 lives per donation (Red cells, Plasma, Platelets)
+• Support emergency and trauma patients
+• Contribute to community health
+• Sense of purpose and fulfillment
+
+⚠️ One donation can make a massive difference."""
+
+        # 8. Who cannot donate blood / disqualifications
+        elif any(word in message_lower for word in ['cannot donate', 'disqualified', 'not eligible', 'who cannot', 'restrictions', 'banned']):
+            if not ask_why:
+                return """**Disqualifications:**
+• **Permanent:** HIV/AIDS, Hepatitis B/C.
+• **Temporary:** Cold/Flu (2 weeks), Antibiotics (1 week), Tattoo (3-12 months), Pregnancy (wait 6 months post-birth), Recent Malaria travel."""
+            else:
+                return """**Blood Donation Disqualifications (Detailed):**
+
+🚫 **Permanent Disqualifications:**
+• HIV/AIDS positive
+• Hepatitis B or C (current infection)
+• Certain cancers (leukemia, lymphoma)
+• High-risk sexual behavior
+• Injectable drug use
+
+⏳ **Temporary Disqualifications:**
+• **Illness:** Cold/Flu (Wait 2 weeks after recovery)
+• **Medication:** Antibiotics (Wait until course finished)
+• **Pregnancy:** Cannot donate. Wait 6 months after childbirth.
+• **Tattoo/Piercing:** Wait 3 months to 1 year.
+• **Travel:** Malaria-risk areas (Wait 3 months to 3 years).
+• **Surgery:** Wait 6-12 months.
+
+⚖️ **Health Requirements:**
+• Must weigh at least 50 kg (110 lbs).
+• Must have adequate hemoglobin levels.
+
+⚠️ Guidelines vary by country. Temporary deferral doesn't mean a permanent ban."""
+
+        # 9. Blood donation process / procedure
+        elif any(word in message_lower for word in ['process', 'procedure', 'how to donate', 'what happens', 'steps', 'donation process']):
+            if not ask_why:
+                return """**Process (45-60 mins):**
+1. **Registration:** ID check & forms.
+2. **Screening:** BP, temp, and iron check.
+3. **Donation:** 8-10 mins for whole blood.
+4. **Recovery:** Rest 15 mins with snacks."""
+            else:
+                return """**Blood Donation Process (Detailed):**
+
+📋 **Step-by-Step:**
+
+**1. Registration (10 min):**
+• ID check, medical history form, and consent.
+
+**2. Health Screening (15 min):**
+• Vitals check (Temp, BP, Pulse).
+• Finger prick for hemoglobin/iron level.
+• Private interview about health history.
+
+**3. The Donation (10 min):**
+• Sterile needle insertion (slight pinch).
+• Collects ~450ml (1 pint).
+• Staff monitors you throughout.
+
+**4. Recovery (15 min):**
+• Bandage applied.
+• Rest in observation area.
+• Snacks and juice provided to restore energy.
+
+✅ **Safety:**
+• Single-use sterile needles are used.
+• You cannot get infections from donating.
+
+⚠️ The actual blood draw only takes about 10 minutes."""
+
+        # 10. Pain during donation
+        elif any(word in message_lower for word in ['hurt', 'pain', 'painful', 'does it hurt', 'needle pain']):
+            return """**Does it Hurt?**
+• **Sensation:** A quick pinch (2-3 seconds) when the needle goes in.
+• **During:** You shouldn't feel pain while blood flows.
+• **Comparison:** Less painful than a dental visit; similar to a vaccine.
+• **Tip:** Look away and take a deep breath to relax."""
+
+        # 11. Dizziness or fainting
+        elif any(word in message_lower for word in ['dizzy', 'faint', 'lightheaded', 'feel weak', 'pass out']):
+            if not ask_why:
+                return """**Dizziness:**
+• **Prevention:** Eat a big meal & drink water before.
+• **If Dizzy:** Lie down immediately, raise legs, drink fluids.
+• **Commonality:** Affects <5% of donors."""
+            else:
+                return """**Dizziness & Fainting (Detailed):**
+
+😵 **Why It Happens:**
+• Temporary drop in blood pressure.
+• Nervousness or empty stomach.
+• Dehydration.
+
+✅ **Prevention:**
+• **Hydrate:** 16oz water before donating.
+• **Eat:** A full meal 2-3 hours prior.
+• **Relax:** Don't watch the needle.
+
+💊 **If You Feel Dizzy:**
+• Tell staff immediately.
+• Lie down or put head between knees.
+• Do not try to walk or drive.
+
+⚠️ **After Care:**
+• Rest for 30 mins.
+• Avoid hot showers or rushing.
+• Most dizziness passes quickly."""
+
+        # 12. Weight requirements
+        elif any(word in message_lower for word in ['weight', 'how much', 'minimum weight', 'underweight', 'overweight']):
+            return """**Weight Requirements:**
+• **Minimum:** 50 kg (110 lbs).
+• **Why:** Safety. Donating too much blood volume for your body size can be dangerous.
+• **Underweight:** Cannot donate for your safety.
+• **Overweight:** No upper limit as long as you are healthy."""
+
+        # 13. Hemoglobin requirements
+        elif any(word in message_lower for word in ['hemoglobin', 'haemoglobin', 'iron', 'anemia', 'anaemia', 'low hemoglobin']):
+            if not ask_why:
+                return """**Iron/Hemoglobin:**
+• **Men:** Min 13.0 g/dL
+• **Women:** Min 12.0 g/dL
+• **Low Iron?** Eat red meat, spinach, fortified cereals with Vitamin C.
+• **Deferral:** Temporary until levels return to normal."""
+            else:
+                return """**Hemoglobin & Iron Requirements (Detailed):**
+
+🔬 **Minimum Levels:**
+• **Men:** 13.0 g/dL
+• **Women:** 12.0 g/dL
+
+❌ **Low Hemoglobin:**
+• You will be temporarily deferred (not banned).
+• Ensures you don't become anemic.
+
+✅ **How to Increase Iron:**
+• **Heme Iron (Best):** Red meat, organ meats, poultry, fish.
+• **Non-Heme Iron:** Spinach, beans, lentils, tofu, fortified cereals.
+• **Booster:** Eat iron foods with Vitamin C (oranges, tomatoes) to absorb more.
+• **Blocker:** Avoid tea/coffee with meals (blocks absorption).
+
+⚠️ Consult a doctor if your iron is persistently low."""
+
+        # 14. Common Cold/Flu
+        elif any(word in message_lower for word in ['cold', 'flu', 'cough', 'sneeze', 'runny nose']):
+             return """**Common Cold & Flu Tips:**
+• **Rest:** Your body needs energy to fight the virus.
+• **Hydrate:** Drink plenty of water, herbal tea, or soup.
+• **Symptom Relief:** Over-the-counter meds can help (consult a pharmacist).
+• **Prevention:** Wash hands frequently.
+⚠️ See a doctor if symptoms last >10 days or high fever persists."""
+
+        # 15. Fever
+        elif any(word in message_lower for word in ['fever', 'temperature', 'high temp']):
+            return """**Fever Management:**
+• **Adults:** Fever is usually >100.4°F (38°C).
+• **Care:** Rest, drink fluids, stay cool.
+• **Medication:** Acetaminophen or ibuprofen can lower fever.
+• **Warning:** Seek help if fever is >103°F (39.4°C) or lasts >3 days."""
+
+        # 16. Headache
+        elif any(word in message_lower for word in ['headache', 'migraine', 'head pain']):
+            return """**Headache Relief:**
+• **Hydration:** Dehydration is a common cause. Drink water.
+• **Rest:** Lie down in a dark, quiet room.
+• **Tension:** Massage neck/temples or use a warm compress.
+• **Screen Time:** Take breaks from phones/computers.
+⚠️ Seek immediate help for "worst headache of your life" or sudden severe pain."""
+
+        # 17. Hydration/Water
+        elif any(word in message_lower for word in ['water', 'hydrate', 'hydration', 'drink']):
+            return """**Hydration Basics:**
+• **Daily Goal:** About 8 glasses (2 liters) per day, more if active.
+• **Benefits:** Energy, skin health, digestion, headache prevention.
+• **Signs of Dehydration:** Thirst, dark urine, fatigue, dizziness."""
+
+        # 18. Sleep
+        elif any(word in message_lower for word in ['sleep', 'insomnia', 'tired', 'rest']):
+             return """**Healthy Sleep Habits:**
+• **Duration:** Adults need 7-9 hours per night.
+• **Routine:** Go to bed at the same time daily.
+• **Environment:** Keep room dark, cool, and quiet.
+• **Avoid:** Caffeine and screens before bed."""
+
+        # Fallback response for unrecognized queries
+        else:
+            return f"""**Health Information Request:**
 
 I understand you're asking about: "{message}"
 
-While I can provide general health information on topics like:
-• Common symptoms (fever, headache, cold, flu)
-• Basic first aid and home remedies
-• Wellness and prevention tips
-• When to seek medical care
-• Blood donation guidelines
+I can help with:
+• **Eligibility:** Age, weight, rules.
+• **Process:** How to donate, pain, time.
+• **Health:** Iron levels, side effects.
+• **Common Issues:** Fever, Cold, Sleep.
+• **Preparation:** What to eat/drink.
 
-**For your specific question, I recommend:**
-• Consulting with a healthcare provider
-• Calling a nurse hotline if available
-• Visiting urgent care for non-emergency concerns
-• Going to emergency room for serious symptoms
+For specific medical advice or emergencies, please consult a doctor.
 
-🚨 **Emergency situations - Call 911:**
-• Difficulty breathing or chest pain
-• Severe bleeding or trauma
-• Loss of consciousness
-• Signs of stroke or heart attack
-• Severe allergic reactions
+🚨 **Call 100/108for emergencies.**"""
 
-⚠️ This chatbot provides general health information only and is not a substitute for professional medical advice, diagnosis, or treatment. Always seek the advice of qualified healthcare providers for specific medical concerns."""
-    
     def _get_fallback_response(self, message: str) -> str:
-        return """I'm here to help with general health information. However, for specific medical concerns, I strongly recommend consulting with qualified healthcare professionals who can provide personalized advice based on your individual situation.
+        return """I'm here to help with general blood donation info. For specific medical concerns, please consult a doctor.
 
 For medical emergencies, please contact emergency services immediately.
 
-⚠️ This chatbot provides general information only and is not a substitute for professional medical advice, diagnosis, or treatment."""
+⚠️ This chatbot provides general information only."""
 
 chatbot = ChatbotAdapter()
 
@@ -731,10 +832,10 @@ def dashboard():
     report_pending = is_report_pending(current_user)
     
     return render_template('dashboard.html', 
-                         user=current_user, 
-                         usage_records=usage_records, 
-                         usage_count=usage_count,
-                         report_pending=report_pending)
+                          user=current_user, 
+                          usage_records=usage_records, 
+                          usage_count=usage_count,
+                          report_pending=report_pending)
 
 @app.route('/profile/edit', methods=['GET', 'POST'])
 @login_required
@@ -810,10 +911,7 @@ def hospital_dashboard():
         donor_query = donor_query.filter(User.state.ilike(f'%{state}%'))
     donors = donor_query.all()
 
-    # Pending approvals logic: show donors with pending status that either
-    # - explicitly selected this hospital by name, OR
-    # - didn't specify a hospital name (so any hospital can review),
-    # Optionally require an uploaded report; disabled to avoid empty list during testing.
+    # Pending approvals logic
     pending_query = User.query.filter(
         User.role == 'user',
         User.report_status == 'pending'
@@ -833,12 +931,12 @@ def hospital_dashboard():
     blood_groups = [bg[0] for bg in blood_groups]
     
     return render_template('hospital_dashboard.html', 
-                         donors=donors,
-                         blood_groups=blood_groups,
-                         search_blood_group=blood_group,
-                         search_city=city,
-                         search_state=state,
-                         pending_approvals=pending_approvals)
+                          donors=donors,
+                          blood_groups=blood_groups,
+                          search_blood_group=blood_group,
+                          search_city=city,
+                          search_state=state,
+                          pending_approvals=pending_approvals)
 
 @app.route('/hospital/approve_donor/<int:donor_id>', methods=['POST'])
 @login_required
