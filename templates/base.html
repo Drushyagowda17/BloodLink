@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#dc3545">
+    <title>{% block title %}BloodLink{% endblock %}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/styles.css') }}" rel="stylesheet">
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-light bg-light shadow-sm sticky-top">
+        <div class="container">
+            <a class="navbar-brand fw-bold text-danger" href="{{ url_for('index') }}">
+                <i class="fas fa-heart me-2"></i>
+                <span data-i18n="app_name">BloodLink</span>
+            </a>
+            
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    {% if current_user.is_authenticated %}
+                        {% if current_user.role == 'user' %}
+                            <li class="nav-item">
+                                <a class="nav-link" href="{{ url_for('dashboard') }}">
+                                    <i class="fas fa-tachometer-alt me-1"></i>
+                                    <span data-i18n="dashboard">Dashboard</span>
+                                </a>
+                            </li>
+                        {% elif current_user.role == 'hospital' %}
+                            <li class="nav-item">
+                                <a class="nav-link" href="{{ url_for('hospital_dashboard') }}">
+                                    <i class="fas fa-hospital me-1"></i>
+                                    <span data-i18n="hospital_dashboard">Hospital Dashboard</span>
+                                </a>
+                            </li>
+                        {% endif %}
+                    {% endif %}
+                </ul>
+                
+                <ul class="navbar-nav align-items-center">
+                    <!-- Theme Toggle -->
+                    <li class="nav-item me-2">
+                        <button class="theme-toggle" id="themeToggle" title="Toggle theme">
+                            <i class="fas fa-moon" id="themeIcon"></i>
+                        </button>
+                    </li>
+                    
+                    <!-- Language Switcher -->
+                    <li class="nav-item dropdown me-3">
+                        <button class="btn btn-outline-secondary btn-sm dropdown-toggle d-flex align-items-center" type="button" id="languageDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="fas fa-globe me-2"></i>
+                            <span id="currentLang">EN</span>
+                        </button>
+                        <ul class="dropdown-menu language-dropdown" aria-labelledby="languageDropdown">
+                            <li><a class="dropdown-item" href="#" data-lang="en">
+                                <i class="fas fa-flag me-2"></i>English
+                            </a></li>
+                            <li><a class="dropdown-item" href="#" data-lang="kn">
+                                <i class="fas fa-flag me-2"></i>ಕನ್ನಡ
+                            </a></li>
+                            <li><a class="dropdown-item" href="#" data-lang="hi">
+                                <i class="fas fa-flag me-2"></i>हिंदी
+                            </a></li>
+                        </ul>
+                    </li>
+                    
+                    {% if current_user.is_authenticated %}
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" role="button" id="userDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                                <div class="user-avatar me-2">
+                                    {{ current_user.name[0].upper() }}
+                                </div>
+                                <span class="d-none d-md-inline">{{ current_user.name }}</span>
+                            </a>
+                            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
+                                {% if current_user.role == 'user' %}
+                                    <li><a class="dropdown-item" href="{{ url_for('dashboard') }}">
+                                        <i class="fas fa-tachometer-alt me-2"></i>
+                                        <span data-i18n="dashboard">Dashboard</span>
+                                    </a></li>
+                                    <li><a class="dropdown-item" href="{{ url_for('edit_profile') }}">
+                                        <i class="fas fa-edit me-2"></i>
+                                        <span data-i18n="edit_profile">Edit Profile</span>
+                                    </a></li>
+                                {% endif %}
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item text-danger" href="{{ url_for('logout') }}">
+                                    <i class="fas fa-sign-out-alt me-2"></i>
+                                    <span data-i18n="logout">Logout</span>
+                                </a></li>
+                            </ul>
+                        </li>
+                    {% else %}
+                        <li class="nav-item me-2">
+                            <a class="btn btn-outline-primary btn-sm" href="{{ url_for('login') }}">
+                                <i class="fas fa-sign-in-alt me-1"></i>
+                                <span data-i18n="login">Login</span>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="btn btn-primary btn-sm" href="{{ url_for('register') }}">
+                                <i class="fas fa-user-plus me-1"></i>
+                                <span data-i18n="register">Register</span>
+                            </a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <main class="container-fluid px-3 px-md-4" id="main-content">
+        <!-- Flash Messages -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div class="row mt-3">
+                    <div class="col-12">
+                        {% for category, message in messages %}
+                            <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show" role="alert">
+                                <i class="fas fa-{{ 'exclamation-circle' if category == 'error' else 'check-circle' if category == 'success' else 'info-circle' }} me-2"></i>
+                                {{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            {% endif %}
+        {% endwith %}
+
+        <div class="row mt-4">
+            <div class="col-12">
+                {% block content %}{% endblock %}
+            </div>
+        </div>
+    </main>
+
+    <!-- Chatbot Widget -->
+    {% if current_user.is_authenticated %}
+    <div class="chatbot-widget" id="chatbotWidget">
+        <!-- Toggle Button (Small Blue Circle) -->
+        <button class="chatbot-toggle-btn" id="chatbotToggleBtn" title="Medical Assistant">
+            <i class="fas fa-robot"></i>
+        </button>
+        
+        <!-- Chatbot Panel (Hidden by default) -->
+        <div class="chatbot-panel" id="chatbotPanel">
+            <div class="chatbot-header">
+                <div class="d-flex align-items-center">
+                    <i class="fas fa-robot me-2"></i>
+                    <span data-i18n="medical_assistant">Medical Assistant</span>
+                </div>
+                <button class="chatbot-close-btn" onclick="toggleChatbot()" title="Close">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="chatbot-body" id="chatbotBody">
+                <div class="chatbot-messages" id="chatbotMessages">
+                    <div class="bot-message">
+                        <span data-i18n="chatbot_welcome">Hello! I'm here to help with general health information. How can I assist you today?</span>
+                    </div>
+                </div>
+                <div class="chatbot-input">
+                    <div class="input-group">
+                        <input type="text" class="form-control" id="chatbotInput" data-i18n="type_message" placeholder="Type your message...">
+                        <button class="btn btn-primary" onclick="sendMessage()" type="button">
+                            <i class="fas fa-paper-plane"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Toast Container -->
+    <div id="toastContainer" class="toast-container position-fixed bottom-0 end-0 p-3"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{{ url_for('static', filename='js/scripts.js') }}"></script>
+</body>
+</html>

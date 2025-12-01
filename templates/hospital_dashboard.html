@@ -1,0 +1,536 @@
+{% extends "base.html" %}
+{% block title %}Hospital Dashboard - BloodLink{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-4">
+    <!-- Header Section -->
+    <div class="d-flex justify-content-between align-items-center mb-5">
+        <div>
+            <h1 class="text-primary fw-bold mb-2">
+                <i class="fas fa-hospital me-3"></i>Hospital Dashboard
+            </h1>
+            <p class="text-muted mb-0">Welcome, <strong class="text-primary">{{ current_user.name }}</strong></p>
+        </div>
+        <div class="d-flex gap-2">
+            <button class="btn btn-outline-primary rounded-pill" onclick="exportData('csv')">
+                <i class="fas fa-download me-2"></i>Export CSV
+            </button>
+            <button class="btn btn-outline-primary rounded-pill" onclick="printPage()">
+                <i class="fas fa-print me-2"></i>Print
+            </button>
+        </div>
+    </div>
+
+    <!-- Quick Stats Section -->
+    <div class="row g-3 mb-5">
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm h-100 bg-gradient-primary">
+                <div class="card-body text-center">
+                    <i class="fas fa-users fa-2x text-primary mb-3"></i>
+                    <h3 class="fw-bold text-dark">{{ donors|length }}</h3>
+                    <p class="text-muted mb-0">Verified Donors</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm h-100 bg-gradient-warning">
+                <div class="card-body text-center">
+                    <i class="fas fa-clock fa-2x text-warning mb-3"></i>
+                    <h3 class="fw-bold text-dark">{{ pending_approvals|length }}</h3>
+                    <p class="text-muted mb-0">Pending Approvals</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm h-100 bg-gradient-success">
+                <div class="card-body text-center">
+                    <i class="fas fa-droplet fa-2x text-success mb-3"></i>
+                    <h3 class="fw-bold text-dark">{{ usage_records|length }}</h3>
+                    <p class="text-muted mb-0">Blood Usage Records</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm h-100 bg-gradient-info">
+                <div class="card-body text-center">
+                    <i class="fas fa-vial fa-2x text-info mb-3"></i>
+                    <h3 class="fw-bold text-dark">{{ blood_groups|length }}</h3>
+                    <p class="text-muted mb-0">Blood Groups</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Search & Filter Section -->
+    <div class="card border-0 shadow-sm mb-5">
+        <div class="card-header bg-primary text-white py-3">
+            <h5 class="mb-0"><i class="fas fa-search me-2"></i>Search & Filter Donors</h5>
+        </div>
+        <div class="card-body">
+            <form method="GET" id="searchForm">
+                <div class="row g-3 align-items-end">
+                    <div class="col-md-3">
+                        <label class="form-label fw-bold">Blood Group</label>
+                        <select class="form-select" id="blood_group" name="blood_group">
+                            <option value="">All Blood Groups</option>
+                            {% for bg in blood_groups %}
+                                <option value="{{ bg }}" {% if search_blood_group == bg %}selected{% endif %}>{{ bg }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label fw-bold">City</label>
+                        <input type="text" class="form-control" name="city" value="{{ search_city or '' }}" placeholder="Enter city">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label fw-bold">State</label>
+                        <input type="text" class="form-control" name="state" value="{{ search_state or '' }}" placeholder="Enter state">
+                    </div>
+                    <div class="col-md-3">
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-primary rounded-pill flex-grow-1">
+                                <i class="fas fa-search me-2"></i>Search
+                            </button>
+                            <button type="button" onclick="clearSearch()" class="btn btn-outline-secondary rounded-pill">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Pending Approvals Section -->
+    {% if pending_approvals %}
+    <div class="card border-0 shadow-sm mb-5 border-start border-warning border-5">
+        <div class="card-header bg-warning text-dark py-3">
+            <h5 class="mb-0"><i class="fas fa-exclamation-circle me-2"></i>Pending Donor Approvals ({{ pending_approvals|length }})</h5>
+        </div>
+        <div class="card-body">
+            <div class="row g-3">
+                {% for donor in pending_approvals %}
+                <div class="col-md-6 col-lg-4">
+                    <div class="card border-warning h-100 shadow-sm">
+                        <div class="card-body">
+                            <div class="d-flex align-items-center mb-3">
+                                <div class="avatar-circle bg-warning text-dark me-3">{{ donor.name[0] }}</div>
+                                <div>
+                                    <h6 class="mb-0 fw-bold">{{ donor.name }}</h6>
+                                    <small class="text-muted">{{ donor.email }}</small>
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <span class="badge bg-warning text-dark fs-6">{{ donor.blood_group }}</span>
+                                <span class="badge bg-info text-white fs-6">{{ donor.age }} yrs</span>
+                            </div>
+                            <p class="mb-2"><small><strong>Location:</strong> {{ donor.city }}, {{ donor.state }}</small></p>
+                            <p class="mb-3"><small><strong>Contact:</strong> {{ donor.contact_number }}</small></p>
+                            {% if donor.blood_report_filename %}
+                            <p class="mb-3">
+                                <a href="{{ url_for('static', filename='uploads/' + donor.blood_report_filename) }}" 
+                                   target="_blank" class="btn btn-sm btn-outline-info">
+                                    <i class="fas fa-file-pdf me-1"></i>View Report
+                                </a>
+                            </p>
+                            {% endif %}
+                            <form method="POST" action="{{ url_for('approve_donor', donor_id=donor.id) }}" class="d-flex gap-2">
+                                <button type="submit" name="action" value="approve" class="btn btn-sm btn-success flex-grow-1">
+                                    <i class="fas fa-check me-1"></i>Approve
+                                </button>
+                                <button type="submit" name="action" value="reject" class="btn btn-sm btn-danger flex-grow-1">
+                                    <i class="fas fa-times me-1"></i>Reject
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Verified Donors Section -->
+    <div class="card border-0 shadow-sm">
+        <div class="card-header bg-primary text-white py-3 d-flex justify-content-between align-items-center">
+            <h5 class="mb-0"><i class="fas fa-check-circle me-2"></i>Verified Donors ({{ donors|length }})</h5>
+        </div>
+        <div class="card-body p-0">
+            {% if donors %}
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th class="fw-bold">Donor Name</th>
+                                <th class="fw-bold">Blood Group</th>
+                                <th class="fw-bold">Age / Gender</th>
+                                <th class="fw-bold">Location</th>
+                                <th class="fw-bold">Contact</th>
+                                <th class="fw-bold">Blood Usage</th>
+                                <th class="fw-bold">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for donor in donors %}
+                            <tr>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        <div class="avatar-circle bg-danger text-white me-2" style="width: 35px; height: 35px; font-size: 0.9rem;">{{ donor.name[0] }}</div>
+                                        <div>
+                                            <strong>{{ donor.name }}</strong><br>
+                                            <small class="text-muted">{{ donor.email }}</small>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <span class="badge bg-danger fs-6">{{ donor.blood_group }}</span>
+                                </td>
+                                <td>
+                                    <small>{{ donor.age }} yrs<br>{{ donor.gender }}</small>
+                                </td>
+                                <td>
+                                    <small>{{ donor.city }}<br>{{ donor.state }} - {{ donor.pincode }}</small>
+                                </td>
+                                <td>
+                                    <a href="tel:{{ donor.contact_number }}" class="text-decoration-none">
+                                        <i class="fas fa-phone text-primary me-1"></i>{{ donor.contact_number }}
+                                    </a><br>
+                                    {% if donor.diseases %}
+                                        <span class="badge bg-warning text-dark mt-1">Has Conditions</span>
+                                    {% else %}
+                                        <span class="badge bg-success mt-1">No Conditions</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% set donor_usages = usage_records|selectattr("donor_id", "==", donor.id)|list %}
+                                    {% if donor_usages %}
+                                        <div class="badge bg-success mb-2">{{ donor_usages|length }} Record(s)</div>
+                                        <button class="btn btn-sm btn-outline-info" data-bs-toggle="collapse" data-bs-target="#usage{{ donor.id }}">
+                                            <i class="fas fa-history me-1"></i>View
+                                        </button>
+                                    {% else %}
+                                        <span class="text-muted">No usage yet</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <a href="{{ url_for('new_usage', donor_id=donor.id) }}" class="btn btn-sm btn-success">
+                                        <i class="fas fa-plus me-1"></i>Record Usage
+                                    </a>
+                                </td>
+                            </tr>
+                            <!-- Blood Usage History Row -->
+                            {% set donor_usages = usage_records|selectattr("donor_id", "==", donor.id)|list %}
+                            {% if donor_usages %}
+                            <tr>
+                                <td colspan="7">
+                                    <div class="collapse" id="usage{{ donor.id }}">
+                                        <div class="p-4 bg-light rounded">
+                                            <h6 class="text-primary mb-3"><i class="fas fa-history me-2"></i>Blood Usage History</h6>
+                                            <div class="table-responsive">
+                                                <table class="table table-sm table-bordered">
+                                                    <thead class="table-light">
+                                                        <tr>
+                                                            <th>Date & Time</th>
+                                                            <th>Units</th>
+                                                            <th>Type</th>
+                                                            <th>Notes</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        {% for record in donor_usages %}
+                                                        <tr>
+                                                            <td><small>{{ record.date.strftime('%d %b %Y, %I:%M %p') }}</small></td>
+                                                            <td><strong>{{ record.blood_units|default('—') }}</strong></td>
+                                                            <td>{{ record.usage_type|default('—') }}</td>
+                                                            <td><small class="text-muted">{{ record.notes|default('No notes') }}</small></td>
+                                                        </tr>
+                                                        {% endfor %}
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endif %}
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="text-center py-5">
+                    <i class="fas fa-users text-muted" style="font-size: 4rem;"></i>
+                    <h5 class="text-muted mt-3">No verified donors found</h5>
+                    <p class="text-muted">Approve pending donors to see them here</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<style>
+    :root {
+        --primary-color: #dc3545;
+        --success-color: #28a745;
+        --warning-color: #ffc107;
+        --info-color: #17a2b8;
+    }
+
+    .avatar-circle {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        font-size: 1.4rem;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    }
+
+    .bg-gradient-primary {
+        background: linear-gradient(135deg, #dc3545 0%, #c82333 100%) !important;
+        color: white;
+    }
+
+    .bg-gradient-warning {
+        background: linear-gradient(135deg, #ffc107 0%, #e0a800 100%) !important;
+        color: white;
+    }
+
+    .bg-gradient-success {
+        background: linear-gradient(135deg, #28a745 0%, #218838 100%) !important;
+        color: white;
+    }
+
+    .bg-gradient-info {
+        background: linear-gradient(135deg, #17a2b8 0%, #138496 100%) !important;
+        color: white;
+    }
+
+    .card {
+        transition: all 0.3s ease;
+        border-radius: 12px;
+    }
+
+    .card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1) !important;
+    }
+
+    .table-hover tbody tr:hover {
+        background-color: #f8f9fa;
+    }
+
+    .badge {
+        font-size: 0.85rem;
+        padding: 0.5rem 0.75rem;
+    }
+
+    .btn-sm {
+        padding: 0.4rem 0.8rem;
+        font-size: 0.85rem;
+    }
+
+    /* Table styling for light mode */
+    .table {
+        background-color: #ffffff;
+        color: #212529;
+    }
+
+    .table tbody td {
+        background-color: #ffffff;
+        color: #212529;
+        border-color: #dee2e6;
+    }
+
+    .table thead th {
+        background-color: #f8f9fa;
+        color: #212529;
+        border-color: #dee2e6;
+    }
+
+    .table tbody tr:hover {
+        background-color: #f8f9fa !important;
+    }
+
+    /* Dark mode support */
+    [data-theme="dark"] .bg-light {
+        background-color: #2d2d2d !important;
+        color: #ffffff !important;
+    }
+
+    [data-theme="dark"] .table-light {
+        background-color: #3d3d3d !important;
+        color: #ffffff !important;
+    }
+
+    [data-theme="dark"] .table-light th {
+        color: #ffffff !important;
+    }
+
+    [data-theme="dark"] .table {
+        background-color: #1a1a1a !important;
+        color: #ffffff !important;
+    }
+
+    [data-theme="dark"] .table tbody td {
+        background-color: #1a1a1a !important;
+        color: #ffffff !important;
+        border-color: #404040 !important;
+    }
+
+    [data-theme="dark"] .table thead th {
+        background-color: #2d2d2d !important;
+        color: #ffffff !important;
+        border-color: #404040 !important;
+    }
+
+    [data-theme="dark"] .table-hover tbody tr:hover {
+        background-color: #2d2d2d !important;
+    }
+
+    [data-theme="dark"] .text-muted {
+        color: #adb5bd !important;
+    }
+
+    [data-theme="dark"] .card {
+        background-color: #1a1a1a !important;
+        border-color: #404040 !important;
+        color: #ffffff !important;
+    }
+
+    [data-theme="dark"] .card-body {
+        background-color: #1a1a1a !important;
+        color: #ffffff !important;
+    }
+
+    [data-theme="dark"] .card-header {
+        background-color: #2d2d2d !important;
+        border-color: #404040 !important;
+        color: #ffffff !important;
+    }
+
+    [data-theme="dark"] .form-control,
+    [data-theme="dark"] .form-select {
+        background-color: #3d3d3d !important;
+        color: #ffffff !important;
+        border-color: #495057 !important;
+    }
+
+    [data-theme="dark"] .form-control:focus,
+    [data-theme="dark"] .form-select:focus {
+        background-color: #3d3d3d !important;
+        color: #ffffff !important;
+        border-color: #dc3545 !important;
+    }
+
+    [data-theme="dark"] .form-label {
+        color: #ffffff !important;
+    }
+
+    /* Ensure text visibility in all modes */
+    .text-dark {
+        color: #212529 !important;
+    }
+
+    [data-theme="dark"] .text-dark {
+        color: #ffffff !important;
+    }
+
+    .fw-bold {
+        font-weight: 600 !important;
+    }
+
+    [data-theme="dark"] .fw-bold {
+        color: #ffffff !important;
+    }
+
+    /* Strong text in dark mode */
+    [data-theme="dark"] strong {
+        color: #ffffff !important;
+    }
+
+    /* Small text in dark mode */
+    [data-theme="dark"] small {
+        color: #adb5bd !important;
+    }
+
+    /* Links in dark mode */
+    [data-theme="dark"] a {
+        color: #0d6efd !important;
+    }
+
+    [data-theme="dark"] a:hover {
+        color: #0a58ca !important;
+    }
+
+    /* Badge styling in dark mode */
+    [data-theme="dark"] .badge {
+        background-color: #404040 !important;
+        color: #ffffff !important;
+    }
+
+    /* Responsive adjustments */
+    @media (max-width: 768px) {
+        .table {
+            font-size: 0.9rem;
+        }
+
+        .avatar-circle {
+            width: 40px;
+            height: 40px;
+            font-size: 1.1rem;
+        }
+
+        .badge {
+            font-size: 0.75rem;
+            padding: 0.35rem 0.6rem;
+        }
+    }
+</style>
+
+<script>
+function clearSearch() {
+    document.getElementById('blood_group').value = '';
+    document.querySelector('input[name="city"]').value = '';
+    document.querySelector('input[name="state"]').value = '';
+    document.getElementById('searchForm').submit();
+}
+
+function exportData(format) {
+    if (format === 'csv') {
+        // Create CSV content
+        let csv = 'Donor Name,Blood Group,Age,Gender,City,State,Contact,Blood Usage Records\n';
+        
+        const rows = document.querySelectorAll('table tbody tr');
+        rows.forEach(row => {
+            const cells = row.querySelectorAll('td');
+            if (cells.length > 0 && !row.querySelector('.collapse')) {
+                const name = cells[0].textContent.trim().split('\n')[0];
+                const bloodGroup = cells[1].textContent.trim();
+                const ageGender = cells[2].textContent.trim().replace(/\n/g, ' ');
+                const location = cells[3].textContent.trim().replace(/\n/g, ' ');
+                const contact = cells[4].textContent.trim().split('\n')[0];
+                const usage = cells[5].textContent.trim().split('\n')[0];
+                
+                csv += `"${name}","${bloodGroup}","${ageGender}","${location}","${contact}","${usage}"\n`;
+            }
+        });
+        
+        // Download CSV
+        const blob = new Blob([csv], { type: 'text/csv' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'hospital_donors_' + new Date().toISOString().split('T')[0] + '.csv';
+        a.click();
+    }
+}
+
+function printPage() {
+    window.print();
+}
+</script>
+{% endblock %}

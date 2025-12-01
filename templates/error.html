@@ -1,0 +1,201 @@
+{% extends "base.html" %}
+
+{% block title %}Error {{ error_code }} - BloodLink{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-6 col-md-8">
+        <div class="text-center">
+            <!-- Error Icon -->
+            <div class="mb-4">
+                {% if error_code == 404 %}
+                    <i class="fas fa-search text-muted" style="font-size: 8rem;"></i>
+                {% elif error_code == 500 %}
+                    <i class="fas fa-exclamation-triangle text-warning" style="font-size: 8rem;"></i>
+                {% elif error_code == 403 %}
+                    <i class="fas fa-lock text-danger" style="font-size: 8rem;"></i>
+                {% else %}
+                    <i class="fas fa-exclamation-circle text-muted" style="font-size: 8rem;"></i>
+                {% endif %}
+            </div>
+
+            <!-- Error Code -->
+            <h1 class="display-1 fw-bold text-muted">{{ error_code }}</h1>
+
+            <!-- Error Message -->
+            <h3 class="mb-4">
+                {% if error_code == 404 %}
+                    Page Not Found
+                {% elif error_code == 500 %}
+                    Internal Server Error
+                {% elif error_code == 403 %}
+                    Access Forbidden
+                {% else %}
+                    Something Went Wrong
+                {% endif %}
+            </h3>
+
+            <p class="lead text-muted mb-4">
+                {% if error_code == 404 %}
+                    The page you're looking for doesn't exist or has been moved.
+                {% elif error_code == 500 %}
+                    We're experiencing some technical difficulties. Please try again later.
+                {% elif error_code == 403 %}
+                    You don't have permission to access this resource.
+                {% else %}
+                    {{ error_message or "An unexpected error occurred." }}
+                {% endif %}
+            </p>
+
+            <!-- Action Buttons -->
+            <div class="d-flex flex-column flex-sm-row gap-3 justify-content-center">
+                <a href="{{ url_for('index') }}" class="btn btn-danger btn-lg">
+                    <i class="fas fa-home me-2"></i>
+                    Go Home
+                </a>
+                
+                <button onclick="history.back()" class="btn btn-outline-secondary btn-lg">
+                    <i class="fas fa-arrow-left me-2"></i>
+                    Go Back
+                </button>
+                
+                {% if current_user.is_authenticated %}
+                    {% if current_user.role == 'user' %}
+                        <a href="{{ url_for('dashboard') }}" class="btn btn-outline-primary btn-lg">
+                            <i class="fas fa-tachometer-alt me-2"></i>
+                            Dashboard
+                        </a>
+                    {% elif current_user.role == 'hospital' %}
+                        <a href="{{ url_for('hospital_dashboard') }}" class="btn btn-outline-primary btn-lg">
+                            <i class="fas fa-hospital me-2"></i>
+                            Hospital Dashboard
+                        </a>
+                    {% endif %}
+                {% else %}
+                    <a href="{{ url_for('login') }}" class="btn btn-outline-primary btn-lg">
+                        <i class="fas fa-sign-in-alt me-2"></i>
+                        Login
+                    </a>
+                {% endif %}
+            </div>
+
+            <!-- Additional Help -->
+            <div class="mt-5">
+                <div class="card">
+                    <div class="card-body">
+                        <h6 class="card-title">
+                            <i class="fas fa-question-circle me-2"></i>
+                            Need Help?
+                        </h6>
+                        <p class="card-text mb-3">
+                            If you continue to experience issues, please contact our support team.
+                        </p>
+                        <div class="d-flex flex-column flex-sm-row gap-2 justify-content-center">
+                            <a href="mailto:support@bloodlink.com" class="btn btn-outline-info btn-sm">
+                                <i class="fas fa-envelope me-1"></i>
+                                Email Support
+                            </a>
+                            <a href="tel:+91-XXXX-XXXX" class="btn btn-outline-info btn-sm">
+                                <i class="fas fa-phone me-1"></i>
+                                Call Support
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Links -->
+            <div class="mt-4">
+                <h6 class="text-muted mb-3">Quick Links</h6>
+                <div class="d-flex flex-wrap gap-2 justify-content-center">
+                    <a href="{{ url_for('index') }}" class="btn btn-link btn-sm">Home</a>
+                    {% if not current_user.is_authenticated %}
+                        <a href="{{ url_for('register') }}" class="btn btn-link btn-sm">Register</a>
+                        <a href="{{ url_for('login') }}" class="btn btn-link btn-sm">Login</a>
+                        <a href="{{ url_for('hospital_register') }}" class="btn btn-link btn-sm">Hospital Registration</a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Error Details (for development) -->
+{% if config.DEBUG and error_details %}
+<div class="row justify-content-center mt-5">
+    <div class="col-lg-8">
+        <div class="card border-warning">
+            <div class="card-header bg-warning text-dark">
+                <h6 class="mb-0">
+                    <i class="fas fa-bug me-2"></i>
+                    Debug Information
+                </h6>
+            </div>
+            <div class="card-body">
+                <pre class="mb-0"><code>{{ error_details }}</code></pre>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<script>
+// Auto-redirect after 30 seconds for certain errors
+{% if error_code == 500 %}
+setTimeout(function() {
+    if (confirm('Would you like to be redirected to the home page?')) {
+        window.location.href = '{{ url_for("index") }}';
+    }
+}, 30000);
+{% endif %}
+
+// Report error functionality
+function reportError() {
+    const errorData = {
+        code: {{ error_code }},
+        message: '{{ error_message or "" }}',
+        url: window.location.href,
+        userAgent: navigator.userAgent,
+        timestamp: new Date().toISOString()
+    };
+    
+    // In a real application, you would send this to your error tracking service
+    console.log('Error reported:', errorData);
+    
+    showToast('Error report sent. Thank you for helping us improve!', 'success');
+}
+
+// Keyboard shortcuts
+document.addEventListener('keydown', function(e) {
+    // Press 'H' to go home
+    if (e.key === 'h' || e.key === 'H') {
+        window.location.href = '{{ url_for("index") }}';
+    }
+    
+    // Press 'B' to go back
+    if (e.key === 'b' || e.key === 'B') {
+        history.back();
+    }
+});
+</script>
+
+<style>
+.btn-link {
+    text-decoration: none;
+}
+
+.btn-link:hover {
+    text-decoration: underline;
+}
+
+@media (max-width: 576px) {
+    .display-1 {
+        font-size: 4rem;
+    }
+    
+    .fas {
+        font-size: 4rem !important;
+    }
+}
+</style>
+{% endblock %}

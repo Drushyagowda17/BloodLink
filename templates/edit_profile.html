@@ -1,0 +1,347 @@
+{% extends "base.html" %}
+
+{% block title %}Edit Profile - BloodLink{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8 col-md-10">
+        <div class="card shadow">
+            <div class="card-header bg-danger text-white d-flex justify-content-between align-items-center">
+                <h3 class="mb-0">
+                    <i class="fas fa-edit me-2"></i>
+                    <span data-i18n="edit_profile">Edit Profile</span>
+                </h3>
+                <a href="{{ url_for('dashboard') }}" class="btn btn-light btn-sm">
+                    <i class="fas fa-arrow-left me-1"></i>
+                    <span data-i18n="back">Back</span>
+                </a>
+            </div>
+            <div class="card-body p-5">
+                <form method="POST" id="editProfileForm">
+                    <div class="row g-3">
+                        <!-- Full Name -->
+                        <div class="col-md-6">
+                            <div class="form-floating">
+                                <input type="text" class="form-control" id="name" name="name" value="{{ user.name }}" placeholder="Full Name" required>
+                                <label for="name" data-i18n="full_name">Full Name</label>
+                            </div>
+                        </div>
+                        
+                        <!-- Age -->
+                        <div class="col-md-6">
+                            <div class="form-floating">
+                                <input type="number" class="form-control" id="age" name="age" value="{{ user.age }}" placeholder="Age" min="18" max="65" required>
+                                <label for="age" data-i18n="age">Age</label>
+                            </div>
+                        </div>
+                        
+                        <!-- Gender -->
+                        <div class="col-md-6">
+                            <div class="form-floating">
+                                <select class="form-select" id="gender" name="gender" required>
+                                    <option value="Male" {% if user.gender == 'Male' %}selected{% endif %} data-i18n="male">Male</option>
+                                    <option value="Female" {% if user.gender == 'Female' %}selected{% endif %} data-i18n="female">Female</option>
+                                    <option value="Other" {% if user.gender == 'Other' %}selected{% endif %} data-i18n="other">Other</option>
+                                </select>
+                                <label for="gender" data-i18n="gender">Gender</label>
+                            </div>
+                        </div>
+                        
+                        <!-- Blood Group -->
+                        <div class="col-md-6">
+                            <div class="form-floating">
+                                <select class="form-select" id="blood_group" name="blood_group" required>
+                                    <option value="A+" {% if user.blood_group == 'A+' %}selected{% endif %}>A+</option>
+                                    <option value="A-" {% if user.blood_group == 'A-' %}selected{% endif %}>A-</option>
+                                    <option value="B+" {% if user.blood_group == 'B+' %}selected{% endif %}>B+</option>
+                                    <option value="B-" {% if user.blood_group == 'B-' %}selected{% endif %}>B-</option>
+                                    <option value="AB+" {% if user.blood_group == 'AB+' %}selected{% endif %}>AB+</option>
+                                    <option value="AB-" {% if user.blood_group == 'AB-' %}selected{% endif %}>AB-</option>
+                                    <option value="O+" {% if user.blood_group == 'O+' %}selected{% endif %}>O+</option>
+                                    <option value="O-" {% if user.blood_group == 'O-' %}selected{% endif %}>O-</option>
+                                </select>
+                                <label for="blood_group" data-i18n="blood_group">Blood Group</label>
+                            </div>
+                        </div>
+                        
+                        <!-- Test Hospital Name -->
+                        <div class="col-12">
+                            <div class="form-floating">
+                                <input type="text" class="form-control" id="test_hospital_name" name="test_hospital_name" value="{{ user.test_hospital_name or '' }}" placeholder="Hospital Name" required>
+                                <label for="test_hospital_name" data-i18n="test_hospital_name">Hospital Name (Where blood was tested)</label>
+                            </div>
+                            <div class="form-text">Enter the name of the hospital where your blood group was tested.</div>
+                        </div>
+                        
+                        <!-- City -->
+                        <div class="col-md-4">
+                            <div class="form-floating">
+                                <input type="text" class="form-control" id="city" name="city" value="{{ user.city }}" placeholder="City" required>
+                                <label for="city" data-i18n="city">City</label>
+                            </div>
+                        </div>
+                        
+                        <!-- State -->
+                        <div class="col-md-4">
+                            <div class="form-floating">
+                                <input type="text" class="form-control" id="state" name="state" value="{{ user.state }}" placeholder="State" required>
+                                <label for="state" data-i18n="state">State</label>
+                            </div>
+                        </div>
+                        
+                        <!-- Pincode -->
+                        <div class="col-md-4">
+                            <div class="form-floating">
+                                <input type="text" class="form-control" id="pincode" name="pincode" value="{{ user.pincode }}" placeholder="Pincode" pattern="[0-9]{6}" required>
+                                <label for="pincode" data-i18n="pincode">Pincode</label>
+                            </div>
+                        </div>
+                        
+                        <!-- Contact Number -->
+                        <div class="col-md-6">
+                            <div class="form-floating">
+                                <input type="tel" class="form-control" id="contact_number" name="contact_number" value="{{ user.contact_number }}" placeholder="Contact Number" pattern="[0-9]{10}" required>
+                                <label for="contact_number" data-i18n="contact_number">Contact Number</label>
+                            </div>
+                        </div>
+                        
+                        <!-- Email (Read-only) -->
+                        <div class="col-md-6">
+                            <div class="form-floating">
+                                <input type="email" class="form-control" id="email" value="{{ user.email }}" placeholder="Email Address" readonly>
+                                <label for="email" data-i18n="email">Email Address</label>
+                            </div>
+                            <div class="form-text">Email cannot be changed. Contact support if needed.</div>
+                        </div>
+                        
+                        <!-- Medical Conditions -->
+                        <div class="col-12">
+                            <div class="form-floating">
+                                <textarea class="form-control" id="diseases" name="diseases" placeholder="Medical Conditions" style="height: 100px">{{ user.diseases or '' }}</textarea>
+                                <label for="diseases" data-i18n="diseases">Medical Conditions/Diseases (Optional)</label>
+                            </div>
+                            <div class="form-text">Please list any medical conditions, allergies, or medications you're currently taking.</div>
+                        </div>
+                        
+                        <!-- Verification Status Display -->
+                        {% if user.blood_report_filename %}
+                        <div class="col-12">
+                            <div class="alert alert-info">
+                                <div class="d-flex align-items-center">
+                                    <i class="fas fa-info-circle fa-2x me-3"></i>
+                                    <div>
+                                        <h6 class="alert-heading mb-1" data-i18n="verification_status">Verification Status</h6>
+                                        <p class="mb-1">
+                                            {% if user.report_status == 'approved' %}
+                                                <span class="text-success">
+                                                    <i class="fas fa-check-circle me-1"></i>
+                                                    <span data-i18n="approved">Approved</span> - You are a verified donor!
+                                                </span>
+                                            {% elif user.report_status == 'pending' %}
+                                                <span class="text-warning">
+                                                    <i class="fas fa-clock me-1"></i>
+                                                    <span data-i18n="pending">Pending</span> - Awaiting hospital approval
+                                                </span>
+                                            {% else %}
+                                                <span class="text-danger">
+                                                    <i class="fas fa-times-circle me-1"></i>
+                                                    <span data-i18n="rejected">Rejected</span> - Please contact support
+                                                </span>
+                                            {% endif %}
+                                        </p>
+                                        <small class="text-muted">
+                                            Report submitted: {{ user.report_submitted_at.strftime('%B %d, %Y at %I:%M %p') if user.report_submitted_at }}
+                                        </small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+                        
+                        <!-- Action Buttons -->
+                        <div class="col-12">
+                            <div class="d-flex gap-3">
+                                <button type="submit" class="btn btn-danger btn-lg">
+                                    <i class="fas fa-save me-2"></i>
+                                    <span data-i18n="save">Save Changes</span>
+                                </button>
+                                <a href="{{ url_for('dashboard') }}" class="btn btn-outline-secondary btn-lg">
+                                    <i class="fas fa-times me-2"></i>
+                                    <span data-i18n="cancel">Cancel</span>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Profile Preview Card -->
+<div class="row justify-content-center mt-4">
+    <div class="col-lg-8 col-md-10">
+        <div class="card">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0">
+                    <i class="fas fa-eye me-2"></i>
+                    Profile Preview
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row g-3" id="profilePreview">
+                    <div class="col-md-6">
+                        <strong data-i18n="full_name">Name:</strong> <span id="previewName">{{ user.name }}</span>
+                    </div>
+                    <div class="col-md-6">
+                        <strong data-i18n="blood_group">Blood Group:</strong> 
+                        <span class="blood-group-badge" id="previewBloodGroup">{{ user.blood_group }}</span>
+                    </div>
+                    <div class="col-md-6">
+                        <strong data-i18n="age">Age:</strong> <span id="previewAge">{{ user.age }}</span> years
+                    </div>
+                    <div class="col-md-6">
+                        <strong data-i18n="gender">Gender:</strong> <span id="previewGender">{{ user.gender }}</span>
+                    </div>
+                    <div class="col-12">
+                        <strong data-i18n="location">Location:</strong> 
+                        <span id="previewLocation">{{ user.city }}, {{ user.state }} - {{ user.pincode }}</span>
+                    </div>
+                    <div class="col-12">
+                        <strong data-i18n="contact">Contact:</strong> <span id="previewContact">{{ user.contact_number }}</span>
+                    </div>
+                    <div class="col-12">
+                        <strong data-i18n="test_hospital_name">Test Hospital:</strong> 
+                        <span id="previewTestHospital">{{ user.test_hospital_name or '' }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Real-time preview update
+function updatePreview() {
+    document.getElementById('previewName').textContent = document.getElementById('name').value;
+    document.getElementById('previewBloodGroup').textContent = document.getElementById('blood_group').value;
+    document.getElementById('previewAge').textContent = document.getElementById('age').value;
+    document.getElementById('previewGender').textContent = document.getElementById('gender').value;
+    document.getElementById('previewContact').textContent = document.getElementById('contact_number').value;
+    document.getElementById('previewTestHospital').textContent = document.getElementById('test_hospital_name').value;
+    
+    const city = document.getElementById('city').value;
+    const state = document.getElementById('state').value;
+    const pincode = document.getElementById('pincode').value;
+    document.getElementById('previewLocation').textContent = `${city}, ${state} - ${pincode}`;
+}
+
+// Add event listeners for real-time preview
+document.querySelectorAll('#editProfileForm input, #editProfileForm select, #editProfileForm textarea').forEach(input => {
+    input.addEventListener('input', updatePreview);
+    input.addEventListener('change', updatePreview);
+});
+
+// Form validation
+document.getElementById('editProfileForm').addEventListener('submit', function(e) {
+    const phone = document.getElementById('contact_number').value;
+    const pincode = document.getElementById('pincode').value;
+    const age = parseInt(document.getElementById('age').value);
+    
+    let isValid = true;
+    
+    // Age validation
+    if (age < 18 || age > 65) {
+        document.getElementById('age').classList.add('is-invalid');
+        showToast(translations.invalid_age || 'Age must be between 18 and 65', 'error');
+        isValid = false;
+    }
+    
+    // Phone validation
+    const phoneRegex = /^[0-9]{10}$/;
+    if (!phoneRegex.test(phone)) {
+        document.getElementById('contact_number').classList.add('is-invalid');
+        showToast(translations.invalid_phone || 'Please enter a valid 10-digit phone number', 'error');
+        isValid = false;
+    }
+    
+    // Pincode validation
+    const pincodeRegex = /^[0-9]{6}$/;
+    if (!pincodeRegex.test(pincode)) {
+        document.getElementById('pincode').classList.add('is-invalid');
+        showToast('Please enter a valid 6-digit pincode', 'error');
+        isValid = false;
+    }
+    
+    if (!isValid) {
+        e.preventDefault();
+    } else {
+        // Show loading state
+        const submitBtn = this.querySelector('button[type="submit"]');
+        const originalText = submitBtn.innerHTML;
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Saving...';
+        submitBtn.disabled = true;
+        
+        // Re-enable button after 10 seconds (in case of error)
+        setTimeout(() => {
+            submitBtn.innerHTML = originalText;
+            submitBtn.disabled = false;
+        }, 10000);
+    }
+});
+
+// Remove invalid class on input
+document.querySelectorAll('.form-control, .form-select').forEach(input => {
+    input.addEventListener('input', function() {
+        this.classList.remove('is-invalid');
+    });
+});
+
+// Real-time validation feedback
+document.getElementById('age').addEventListener('input', function() {
+    const age = parseInt(this.value);
+    if (age && (age < 18 || age > 65)) {
+        this.classList.add('is-invalid');
+    } else {
+        this.classList.remove('is-invalid');
+    }
+});
+
+document.getElementById('contact_number').addEventListener('input', function() {
+    const phoneRegex = /^[0-9]{10}$/;
+    if (this.value && !phoneRegex.test(this.value)) {
+        this.classList.add('is-invalid');
+    } else {
+        this.classList.remove('is-invalid');
+    }
+});
+
+document.getElementById('pincode').addEventListener('input', function() {
+    const pincodeRegex = /^[0-9]{6}$/;
+    if (this.value && !pincodeRegex.test(this.value)) {
+        this.classList.add('is-invalid');
+    } else {
+        this.classList.remove('is-invalid');
+    }
+});
+
+// Confirm before leaving with unsaved changes
+let formChanged = false;
+document.querySelectorAll('#editProfileForm input, #editProfileForm select, #editProfileForm textarea').forEach(input => {
+    input.addEventListener('input', function() {
+        formChanged = true;
+    });
+});
+
+window.addEventListener('beforeunload', function(e) {
+    if (formChanged) {
+        e.preventDefault();
+        e.returnValue = '';
+    }
+});
+
+document.getElementById('editProfileForm').addEventListener('submit', function() {
+    formChanged = false;
+});
+</script>
+{% endblock %}

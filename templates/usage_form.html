@@ -1,0 +1,378 @@
+{% extends "base.html" %}
+
+{% block title %}Record Blood Usage - BloodLink{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8 col-md-10">
+            <!-- Header -->
+            <div class="mb-4">
+                <a href="{{ url_for('hospital_dashboard') }}" class="btn btn-outline-primary btn-sm mb-3">
+                    <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
+                </a>
+                <h1 class="text-primary fw-bold mb-2">
+                    <i class="fas fa-clipboard-list me-3"></i>Record Blood Usage
+                </h1>
+                <p class="text-muted">Document blood usage for donor records and hospital inventory management</p>
+            </div>
+
+            <!-- Main Card -->
+            <div class="card border-0 shadow-lg">
+                <!-- Donor Information Section -->
+                <div class="card-header bg-primary text-white py-4">
+                    <h5 class="mb-0"><i class="fas fa-user-circle me-2"></i>Donor Information</h5>
+                </div>
+                <div class="card-body bg-light p-4">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <div class="d-flex align-items-center">
+                                <div class="avatar-circle bg-danger text-white me-3" style="width: 50px; height: 50px; font-size: 1.5rem;">{{ donor.name[0] }}</div>
+                                <div>
+                                    <small class="text-muted d-block">Donor Name</small>
+                                    <strong class="fs-5">{{ donor.name }}</strong>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <small class="text-muted d-block">Blood Group</small>
+                            <span class="badge bg-danger fs-5 py-2 px-3">{{ donor.blood_group }}</span>
+                        </div>
+                        <div class="col-md-6">
+                            <small class="text-muted d-block">Age</small>
+                            <strong class="fs-5">{{ donor.age }} years</strong>
+                        </div>
+                        <div class="col-md-6">
+                            <small class="text-muted d-block">Gender</small>
+                            <strong class="fs-5">{{ donor.gender }}</strong>
+                        </div>
+                        <div class="col-12">
+                            <small class="text-muted d-block">Location</small>
+                            <strong>{{ donor.city }}, {{ donor.state }} - {{ donor.pincode }}</strong>
+                        </div>
+                        <div class="col-md-6">
+                            <small class="text-muted d-block">Contact Number</small>
+                            <a href="tel:{{ donor.contact_number }}" class="text-decoration-none">
+                                <i class="fas fa-phone text-primary me-1"></i>{{ donor.contact_number }}
+                            </a>
+                        </div>
+                        <div class="col-md-6">
+                            <small class="text-muted d-block">Email</small>
+                            <a href="mailto:{{ donor.email }}" class="text-decoration-none">
+                                <i class="fas fa-envelope text-primary me-1"></i>{{ donor.email }}
+                            </a>
+                        </div>
+                        {% if donor.diseases %}
+                        <div class="col-12">
+                            <div class="alert alert-warning mb-0">
+                                <strong><i class="fas fa-exclamation-triangle me-2"></i>Medical Conditions:</strong>
+                                {{ donor.diseases }}
+                            </div>
+                        </div>
+                        {% else %}
+                        <div class="col-12">
+                            <div class="alert alert-success mb-0">
+                                <strong><i class="fas fa-check-circle me-2"></i>No Medical Conditions Reported</strong>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Usage Record Form -->
+                <div class="card-body p-4">
+                    <form method="POST" action="{{ url_for('create_usage') }}" id="usageForm">
+                        <input type="hidden" name="donor_id" value="{{ donor.id }}">
+
+                        <!-- Hospital Information Section -->
+                        <h6 class="text-primary fw-bold mb-3 mt-4">
+                            <i class="fas fa-hospital me-2"></i>Hospital Information
+                        </h6>
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Hospital Name</label>
+                                <input type="text" class="form-control" value="{{ current_user.name }}" readonly>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Location</label>
+                                <input type="text" class="form-control" value="{{ current_user.city }}, {{ current_user.state }}" readonly>
+                            </div>
+                        </div>
+
+                        <!-- Date & Time Section -->
+                        <h6 class="text-primary fw-bold mb-3 mt-4">
+                            <i class="fas fa-calendar-alt me-2"></i>Date & Time
+                        </h6>
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Usage Date</label>
+                                <input type="date" class="form-control" id="usage_date" name="usage_date" value="{{ today }}" required>
+                                <small class="text-muted">When was the blood used?</small>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Usage Time</label>
+                                <input type="time" class="form-control" id="usage_time" name="usage_time" value="{{ now_time }}" required>
+                                <small class="text-muted">What time was it used?</small>
+                            </div>
+                        </div>
+
+                        <!-- Blood Usage Details Section -->
+                        <h6 class="text-primary fw-bold mb-3 mt-4">
+                            <i class="fas fa-droplet me-2"></i>Blood Usage Details
+                        </h6>
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Blood Units Used</label>
+                                <input type="number" class="form-control" id="blood_units" name="blood_units" placeholder="e.g., 1, 2, 0.5" min="0.1" step="0.1">
+                                <small class="text-muted">Number of units (optional)</small>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Usage Type</label>
+                                <select class="form-select" id="usage_type" name="usage_type">
+                                    <option value="">Select Usage Type</option>
+                                    <option value="Emergency">🚨 Emergency</option>
+                                    <option value="Surgery">🏥 Surgery</option>
+                                    <option value="Transfusion">💉 Transfusion</option>
+                                    <option value="Treatment">⚕️ Treatment</option>
+                                    <option value="Other">📋 Other</option>
+                                </select>
+                                <small class="text-muted">Purpose of blood usage (optional)</small>
+                            </div>
+                        </div>
+
+                        <!-- Notes Section -->
+                        <h6 class="text-primary fw-bold mb-3 mt-4">
+                            <i class="fas fa-sticky-note me-2"></i>Additional Notes
+                        </h6>
+                        <div class="mb-4">
+                            <label class="form-label fw-bold">Usage Notes</label>
+                            <textarea class="form-control" id="notes" name="notes" placeholder="Add any relevant notes about the blood usage, patient condition, or special circumstances..." style="height: 100px;"></textarea>
+                            <small class="text-muted">Optional: Provide additional context for this blood usage record</small>
+                        </div>
+
+                        <!-- Confirmation Section -->
+                        <div class="alert alert-info mb-4">
+                            <h6 class="alert-heading mb-2">
+                                <i class="fas fa-info-circle me-2"></i>Important Information
+                            </h6>
+                            <ul class="mb-0 small">
+                                <li>This record will be permanently stored in the system</li>
+                                <li>All information must be accurate and verified</li>
+                                <li>This helps maintain proper blood inventory and donor records</li>
+                            </ul>
+                        </div>
+
+                        <div class="form-check mb-4">
+                            <input class="form-check-input" type="checkbox" id="confirmation" required>
+                            <label class="form-check-label" for="confirmation">
+                                <strong>I confirm that this blood usage record is accurate and the blood was used for legitimate medical purposes.</strong>
+                            </label>
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div class="d-flex gap-3">
+                            <button type="submit" class="btn btn-success btn-lg flex-grow-1">
+                                <i class="fas fa-save me-2"></i>Save Record
+                            </button>
+                            <a href="{{ url_for('hospital_dashboard') }}" class="btn btn-outline-secondary btn-lg">
+                                <i class="fas fa-times me-2"></i>Cancel
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Confirmation Modal -->
+<div class="modal fade" id="confirmationModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header bg-warning text-dark border-0">
+                <h5 class="modal-title fw-bold">
+                    <i class="fas fa-exclamation-triangle me-2"></i>Confirm Blood Usage Record
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <p class="mb-3"><strong>Please verify the following details before saving:</strong></p>
+                <div class="card bg-light border-0 mb-3">
+                    <div class="card-body" id="confirmationDetails">
+                        <!-- Details will be populated by JavaScript -->
+                    </div>
+                </div>
+                <div class="alert alert-warning small mb-0">
+                    <i class="fas fa-lock me-2"></i>This action will create a permanent record in the system.
+                </div>
+            </div>
+            <div class="modal-footer border-0">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-2"></i>Cancel
+                </button>
+                <button type="button" class="btn btn-success" id="confirmSubmit">
+                    <i class="fas fa-check me-2"></i>Confirm & Save
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .avatar-circle {
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    }
+
+    .form-label {
+        color: #212529;
+        margin-bottom: 0.5rem;
+    }
+
+    [data-theme="dark"] .form-label {
+        color: #ffffff;
+    }
+
+    .form-control, .form-select {
+        border-radius: 8px;
+        border: 1px solid #dee2e6;
+        transition: all 0.3s ease;
+    }
+
+    .form-control:focus, .form-select:focus {
+        border-color: #dc3545;
+        box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25);
+    }
+
+    [data-theme="dark"] .form-control,
+    [data-theme="dark"] .form-select {
+        background-color: #3d3d3d;
+        color: #ffffff;
+        border-color: #495057;
+    }
+
+    [data-theme="dark"] .form-control:focus,
+    [data-theme="dark"] .form-select:focus {
+        background-color: #3d3d3d;
+        color: #ffffff;
+        border-color: #dc3545;
+    }
+
+    [data-theme="dark"] .bg-light {
+        background-color: #2d2d2d !important;
+        color: #ffffff !important;
+    }
+
+    [data-theme="dark"] .card {
+        background-color: #1a1a1a;
+        border-color: #404040;
+    }
+
+    [data-theme="dark"] .card-header {
+        background-color: #2d2d2d !important;
+        border-color: #404040 !important;
+    }
+
+    .btn-lg {
+        padding: 0.75rem 1.5rem;
+        font-size: 1rem;
+        font-weight: 600;
+    }
+
+    .text-muted {
+        color: #6c757d !important;
+    }
+
+    [data-theme="dark"] .text-muted {
+        color: #adb5bd !important;
+    }
+
+    .alert {
+        border-radius: 8px;
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+        .btn-lg {
+            padding: 0.6rem 1.2rem;
+            font-size: 0.95rem;
+        }
+
+        .form-label {
+            font-size: 0.95rem;
+        }
+    }
+</style>
+
+<script>
+document.getElementById('usageForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+
+    // Check confirmation checkbox
+    if (!document.getElementById('confirmation').checked) {
+        alert('Please confirm that the blood usage record is accurate.');
+        return;
+    }
+
+    // Get form values safely
+    const donorName = "{{ donor.name | replace('"', '\\"') }}";
+    const bloodGroup = "{{ donor.blood_group }}";
+    const hospitalName = "{{ current_user.name | replace('"', '\\"') }}";
+
+    const usageDate = document.getElementById('usage_date').value;
+    const usageTime = document.getElementById('usage_time').value;
+    const bloodUnits = document.getElementById('blood_units').value || 'Not specified';
+    const usageType = document.getElementById('usage_type').value || 'Not specified';
+    const notes = document.getElementById('notes').value || 'No notes';
+
+    // Format date for display
+    const dateObj = new Date(usageDate);
+    const formattedDate = dateObj.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+
+    // Build confirmation details HTML
+    let detailsHTML = `
+        <div class="row g-3">
+            <div class="col-12">
+                <strong>Donor:</strong><br>
+                <span class="text-primary">${donorName} (${bloodGroup})</span>
+            </div>
+            <div class="col-12">
+                <strong>Hospital:</strong><br>
+                <span class="text-primary">${hospitalName}</span>
+            </div>
+            <div class="col-12">
+                <strong>Date & Time:</strong><br>
+                <span class="text-primary">${formattedDate} at ${usageTime}</span>
+            </div>
+            <div class="col-12">
+                <strong>Blood Units:</strong><br>
+                <span class="text-primary">${bloodUnits} units</span>
+            </div>
+            <div class="col-12">
+                <strong>Usage Type:</strong><br>
+                <span class="text-primary">${usageType}</span>
+            </div>
+            <div class="col-12">
+                <strong>Notes:</strong><br>
+                <span class="text-muted">${notes}</span>
+            </div>
+        </div>
+    `;
+
+    document.getElementById('confirmationDetails').innerHTML = detailsHTML;
+
+    // Show modal
+    var modal = new bootstrap.Modal(document.getElementById('confirmationModal'));
+    modal.show();
+});
+
+document.getElementById('confirmSubmit').addEventListener('click', function() {
+    document.getElementById('usageForm').submit();
+});
+</script>
+
+{% endblock %}
