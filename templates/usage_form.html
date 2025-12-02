@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Record Blood Usage - BloodLink{% endblock %}
+{% block title %}Record Usage/Donation - BloodLink{% endblock %}
 
 {% block content %}
 <div class="container py-5">
@@ -12,9 +12,9 @@
                     <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
                 </a>
                 <h1 class="text-primary fw-bold mb-2">
-                    <i class="fas fa-clipboard-list me-3"></i>Record Blood Usage
+                    <i class="fas fa-clipboard-list me-3"></i>Record Usage or Donation
                 </h1>
-                <p class="text-muted">Document blood usage for donor records and hospital inventory management</p>
+                <p class="text-muted">Document blood usage for patients or record a donation received from this donor</p>
             </div>
 
             <!-- Main Card -->
@@ -79,10 +79,21 @@
                     </div>
                 </div>
 
-                <!-- Usage Record Form -->
+                <!-- Usage/Donation Record Form -->
                 <div class="card-body p-4">
-                    <form method="POST" action="{{ url_for('create_usage') }}" id="usageForm">
+                    <form method="POST" id="usageForm">
                         <input type="hidden" name="donor_id" value="{{ donor.id }}">
+                        <input type="hidden" id="formAction" value="{{ url_for('create_usage') }}">
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Record Type</label>
+                            <div class="btn-group" role="group">
+                                <input type="radio" class="btn-check" name="record_type" id="record_usage" value="usage" autocomplete="off" checked>
+                                <label class="btn btn-outline-success" for="record_usage"><i class="fas fa-notes-medical me-1"></i> Usage</label>
+
+                                <input type="radio" class="btn-check" name="record_type" id="record_donation" value="donation" autocomplete="off">
+                                <label class="btn btn-outline-primary" for="record_donation"><i class="fas fa-hand-holding-medical me-1"></i> Donation</label>
+                            </div>
+                        </div>
 
                         <!-- Hospital Information Section -->
                         <h6 class="text-primary fw-bold mb-3 mt-4">
@@ -105,38 +116,42 @@
                         </h6>
                         <div class="row g-3 mb-4">
                             <div class="col-md-6">
-                                <label class="form-label fw-bold">Usage Date</label>
-                                <input type="date" class="form-control" id="usage_date" name="usage_date" value="{{ today }}" required>
-                                <small class="text-muted">When was the blood used?</small>
+                                <label class="form-label fw-bold" id="dateLabel">Usage Date</label>
+                                <input type="date" class="form-control" id="date_field" name="usage_date" value="{{ today }}" required>
+                                <small class="text-muted" id="dateHelp">When was the blood used?</small>
                             </div>
                             <div class="col-md-6">
-                                <label class="form-label fw-bold">Usage Time</label>
-                                <input type="time" class="form-control" id="usage_time" name="usage_time" value="{{ now_time }}" required>
-                                <small class="text-muted">What time was it used?</small>
+                                <label class="form-label fw-bold" id="timeLabel">Usage Time</label>
+                                <input type="time" class="form-control" id="time_field" name="usage_time" value="{{ now_time }}" required>
+                                <small class="text-muted" id="timeHelp">What time was it used?</small>
                             </div>
                         </div>
 
-                        <!-- Blood Usage Details Section -->
-                        <h6 class="text-primary fw-bold mb-3 mt-4">
+                        <!-- Blood Usage/Donation Details Section -->
+                        <h6 class="text-primary fw-bold mb-3 mt-4" id="detailsHeader">
                             <i class="fas fa-droplet me-2"></i>Blood Usage Details
                         </h6>
                         <div class="row g-3 mb-4">
                             <div class="col-md-6">
-                                <label class="form-label fw-bold">Blood Units Used</label>
-                                <input type="number" class="form-control" id="blood_units" name="blood_units" placeholder="e.g., 1, 2, 0.5" min="0.1" step="0.1">
-                                <small class="text-muted">Number of units (optional)</small>
+                                <label class="form-label fw-bold" id="unitsLabel">Blood Units Used</label>
+                                <input type="number" class="form-control" id="units_field" name="blood_units" placeholder="e.g., 1, 2, 0.5" min="0.1" step="0.1">
+                                <small class="text-muted" id="unitsHelp">Number of units (optional)</small>
                             </div>
                             <div class="col-md-6">
-                                <label class="form-label fw-bold">Usage Type</label>
-                                <select class="form-select" id="usage_type" name="usage_type">
+                                <label class="form-label fw-bold" id="typeLabel">Usage Type</label>
+                                <select class="form-select" id="type_field" name="usage_type">
                                     <option value="">Select Usage Type</option>
                                     <option value="Emergency">🚨 Emergency</option>
                                     <option value="Surgery">🏥 Surgery</option>
                                     <option value="Transfusion">💉 Transfusion</option>
                                     <option value="Treatment">⚕️ Treatment</option>
+                                    <option value="Whole Blood">🩸 Whole Blood</option>
+                                    <option value="Plasma">🧪 Plasma</option>
+                                    <option value="Platelets">🧬 Platelets</option>
+                                    <option value="Double Red Cells">🩸 Double Red Cells</option>
                                     <option value="Other">📋 Other</option>
                                 </select>
-                                <small class="text-muted">Purpose of blood usage (optional)</small>
+                                <small class="text-muted" id="typeHelp">Purpose of blood usage (optional)</small>
                             </div>
                         </div>
 
@@ -145,9 +160,9 @@
                             <i class="fas fa-sticky-note me-2"></i>Additional Notes
                         </h6>
                         <div class="mb-4">
-                            <label class="form-label fw-bold">Usage Notes</label>
+                            <label class="form-label fw-bold" id="notesLabel">Usage Notes</label>
                             <textarea class="form-control" id="notes" name="notes" placeholder="Add any relevant notes about the blood usage, patient condition, or special circumstances..." style="height: 100px;"></textarea>
-                            <small class="text-muted">Optional: Provide additional context for this blood usage record</small>
+                            <small class="text-muted" id="notesHelp">Optional: Provide additional context for this blood usage record</small>
                         </div>
 
                         <!-- Confirmation Section -->
@@ -171,8 +186,8 @@
 
                         <!-- Action Buttons -->
                         <div class="d-flex gap-3">
-                            <button type="submit" class="btn btn-success btn-lg flex-grow-1">
-                                <i class="fas fa-save me-2"></i>Save Record
+                            <button type="submit" class="btn btn-success btn-lg flex-grow-1" id="submitBtn">
+                                <i class="fas fa-save me-2"></i>Save Usage Record
                             </button>
                             <a href="{{ url_for('hospital_dashboard') }}" class="btn btn-outline-secondary btn-lg">
                                 <i class="fas fa-times me-2"></i>Cancel
@@ -191,7 +206,7 @@
         <div class="modal-content border-0 shadow-lg">
             <div class="modal-header bg-warning text-dark border-0">
                 <h5 class="modal-title fw-bold">
-                    <i class="fas fa-exclamation-triangle me-2"></i>Confirm Blood Usage Record
+                    <i class="fas fa-exclamation-triangle me-2"></i>Confirm Record
                 </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
@@ -202,8 +217,8 @@
                         <!-- Details will be populated by JavaScript -->
                     </div>
                 </div>
-                <div class="alert alert-warning small mb-0">
-                    <i class="fas fa-lock me-2"></i>This action will create a permanent record in the system.
+                <div class="alert alert-warning small mb-0" id="confirmationNote">
+                    <i class="fas fa-lock me-2"></i>This action will create a permanent usage record in the system.
                 </div>
             </div>
             <div class="modal-footer border-0">
@@ -309,31 +324,95 @@
 </style>
 
 <script>
-document.getElementById('usageForm').addEventListener('submit', function(e) {
-    e.preventDefault();
+const usageForm = document.getElementById('usageForm');
+const formAction = document.getElementById('formAction');
+const submitBtn = document.getElementById('submitBtn');
 
-    // Check confirmation checkbox
+function setMode(mode) {
+    if (mode === 'donation') {
+        // Update labels and help texts for donation
+        document.getElementById('detailsHeader').innerHTML = '<i class="fas fa-hand-holding-medical me-2"></i>Blood Donation Details';
+        document.getElementById('unitsLabel').textContent = 'Donation Units';
+        document.getElementById('unitsHelp').textContent = 'Number of units donated (optional)';
+        document.getElementById('typeLabel').textContent = 'Donation Type';
+        document.getElementById('typeHelp').textContent = 'Type of donation (optional)';
+        document.getElementById('notesLabel').textContent = 'Donation Notes';
+        document.getElementById('notesHelp').textContent = 'Optional: Provide details about the donation circumstances';
+        document.getElementById('dateLabel').textContent = 'Donation Date';
+        document.getElementById('timeLabel').textContent = 'Donation Time';
+        document.getElementById('dateHelp').textContent = 'When was the blood donated?';
+        document.getElementById('timeHelp').textContent = 'What time was it donated?';
+
+        // Change field names to match donation endpoint
+        document.getElementById('units_field').setAttribute('name', 'donation_units');
+        document.getElementById('type_field').setAttribute('name', 'donation_type');
+        document.getElementById('date_field').setAttribute('name', 'donation_date');
+        document.getElementById('time_field').setAttribute('name', 'donation_time');
+
+        // Update form action and submit text
+        usageForm.setAttribute('action', '{{ url_for('create_donation') }}');
+        submitBtn.innerHTML = '<i class="fas fa-save me-2"></i>Save Donation Record';
+        document.getElementById('confirmationNote').innerHTML = '<i class="fas fa-lock me-2"></i>This action will create a permanent donation record in the system.';
+    } else {
+        // Update labels and help texts for usage
+        document.getElementById('detailsHeader').innerHTML = '<i class="fas fa-droplet me-2"></i>Blood Usage Details';
+        document.getElementById('unitsLabel').textContent = 'Blood Units Used';
+        document.getElementById('unitsHelp').textContent = 'Number of units (optional)';
+        document.getElementById('typeLabel').textContent = 'Usage Type';
+        document.getElementById('typeHelp').textContent = 'Purpose of blood usage (optional)';
+        document.getElementById('notesLabel').textContent = 'Usage Notes';
+        document.getElementById('notesHelp').textContent = 'Optional: Provide additional context for this blood usage record';
+        document.getElementById('dateLabel').textContent = 'Usage Date';
+        document.getElementById('timeLabel').textContent = 'Usage Time';
+        document.getElementById('dateHelp').textContent = 'When was the blood used?';
+        document.getElementById('timeHelp').textContent = 'What time was it used?';
+
+        // Change field names to match usage endpoint
+        document.getElementById('units_field').setAttribute('name', 'blood_units');
+        document.getElementById('type_field').setAttribute('name', 'usage_type');
+        document.getElementById('date_field').setAttribute('name', 'usage_date');
+        document.getElementById('time_field').setAttribute('name', 'usage_time');
+
+        // Update form action and submit text
+        usageForm.setAttribute('action', '{{ url_for('create_usage') }}');
+        submitBtn.innerHTML = '<i class="fas fa-save me-2"></i>Save Usage Record';
+        document.getElementById('confirmationNote').innerHTML = '<i class="fas fa-lock me-2"></i>This action will create a permanent usage record in the system.';
+    }
+}
+
+// Mode toggle events
+const usageRadio = document.getElementById('record_usage');
+const donationRadio = document.getElementById('record_donation');
+usageRadio.addEventListener('change', () => setMode('usage'));
+donationRadio.addEventListener('change', () => setMode('donation'));
+
+// Initial mode
+setMode('usage');
+
+usageForm.addEventListener('submit', function(e) {
+    // Confirmation check
     if (!document.getElementById('confirmation').checked) {
-        alert('Please confirm that the blood usage record is accurate.');
+        e.preventDefault();
+        alert('Please confirm that the record is accurate.');
         return;
     }
 
-    // Get form values safely
+    // Build confirmation details
     const donorName = "{{ donor.name | replace('"', '\\"') }}";
     const bloodGroup = "{{ donor.blood_group }}";
     const hospitalName = "{{ current_user.name | replace('"', '\\"') }}";
 
-    const usageDate = document.getElementById('usage_date').value;
-    const usageTime = document.getElementById('usage_time').value;
-    const bloodUnits = document.getElementById('blood_units').value || 'Not specified';
-    const usageType = document.getElementById('usage_type').value || 'Not specified';
-    const notes = document.getElementById('notes').value || 'No notes';
+    const dateVal = document.getElementById('date_field').value;
+    const timeVal = document.getElementById('time_field').value;
+    const unitsVal = document.getElementById('units_field').value || 'Not specified';
+    const typeVal = document.getElementById('type_field').value || 'Not specified';
+    const notesVal = document.getElementById('notes').value || 'No notes';
 
-    // Format date for display
-    const dateObj = new Date(usageDate);
-    const formattedDate = dateObj.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+    const dateObj = new Date(dateVal);
+    const formattedDate = isNaN(dateObj.valueOf()) ? dateVal : dateObj.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
 
-    // Build confirmation details HTML
+    const isDonation = donationRadio.checked;
+
     let detailsHTML = `
         <div class="row g-3">
             <div class="col-12">
@@ -346,32 +425,33 @@ document.getElementById('usageForm').addEventListener('submit', function(e) {
             </div>
             <div class="col-12">
                 <strong>Date & Time:</strong><br>
-                <span class="text-primary">${formattedDate} at ${usageTime}</span>
+                <span class="text-primary">${formattedDate} at ${timeVal}</span>
             </div>
             <div class="col-12">
-                <strong>Blood Units:</strong><br>
-                <span class="text-primary">${bloodUnits} units</span>
+                <strong>${isDonation ? 'Donation' : 'Blood'} Units:</strong><br>
+                <span class="text-primary">${unitsVal} units</span>
             </div>
             <div class="col-12">
-                <strong>Usage Type:</strong><br>
-                <span class="text-primary">${usageType}</span>
+                <strong>${isDonation ? 'Donation' : 'Usage'} Type:</strong><br>
+                <span class="text-primary">${typeVal}</span>
             </div>
             <div class="col-12">
                 <strong>Notes:</strong><br>
-                <span class="text-muted">${notes}</span>
+                <span class="text-muted">${notesVal}</span>
             </div>
         </div>
     `;
 
     document.getElementById('confirmationDetails').innerHTML = detailsHTML;
 
-    // Show modal
+    // Show modal and on confirm, allow submit
+    e.preventDefault();
     var modal = new bootstrap.Modal(document.getElementById('confirmationModal'));
     modal.show();
-});
 
-document.getElementById('confirmSubmit').addEventListener('click', function() {
-    document.getElementById('usageForm').submit();
+    document.getElementById('confirmSubmit').onclick = function() {
+        usageForm.submit();
+    };
 });
 </script>
 

@@ -613,6 +613,7 @@ class User(UserMixin, db.Model):
     
     # Relationships
     blood_usage = db.relationship('BloodUsage', backref='donor', lazy=True)
+    donations = db.relationship('Donation', backref='donor', lazy=True)
     approved_by_hospital = db.relationship('Hospital', foreign_keys=[approved_by_hospital_id], backref='approved_donors')
 
 class Hospital(UserMixin, db.Model):
@@ -630,6 +631,7 @@ class Hospital(UserMixin, db.Model):
     
     # Relationships
     blood_usage = db.relationship('BloodUsage', backref='hospital', lazy=True)
+    donations = db.relationship('Donation', backref='hospital', lazy=True)
 
 class BloodUsage(db.Model):
     __tablename__ = 'blood_usage'
@@ -648,6 +650,19 @@ class BloodUsage(db.Model):
     # Relationships (optional )
     #donor = db.relationship('User', foreign_keys=[donor_id])
     #hospital = db.relationship('Hospital', foreign_keys=[hospital_id])
+
+class Donation(db.Model):
+    __tablename__ = 'donations'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    donor_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    hospital_id = db.Column(db.Integer, db.ForeignKey('hospitals.id'), nullable=False)
+    
+    donation_units = db.Column(db.String(20))      # e.g., "1", "0.5", "2 units"
+    donation_type = db.Column(db.String(100))      # e.g., "Whole Blood", "Plasma", "Platelets"
+    notes = db.Column(db.Text)
+    
+    date = db.Column(db.DateTime, default=datetime.utcnow)
 
 @login_manager.user_loader
 def load_user(user_id):
@@ -672,7 +687,7 @@ def load_user(user_id):
 
 # Helper function to get valid hospital codes
 def get_valid_hospital_codes():
-    codes = os.environ.get('HOSPITAL_CODES', 'HOSP001,HOSP002,HOSP003,AIIMS001,SGPGI001,KIMS001')
+    codes = os.environ.get('HOSPITAL_CODES', 'HOSP001,HOSP002,HOSP003,AIIMS001,SGPGI001,KIMS001,BIG001')
     return [code.strip() for code in codes.split(',')]
 
 # Helper function to check if report is still pending (within 30 minutes)
@@ -836,6 +851,10 @@ def dashboard():
     # Get blood usage stats for the user
     usage_records = BloodUsage.query.filter_by(donor_id=current_user.id).all()
     usage_count = len(usage_records)
+
+    # Get donation stats for the user
+    donation_records = Donation.query.filter_by(donor_id=current_user.id).order_by(Donation.date.desc()).all()
+    donation_count = len(donation_records)
     
     # Check if report is still pending
     report_pending = is_report_pending(current_user)
@@ -844,6 +863,8 @@ def dashboard():
                           user=current_user, 
                           usage_records=usage_records, 
                           usage_count=usage_count,
+                          donation_records=donation_records,
+                          donation_count=donation_count,
                           report_pending=report_pending)
 
 @app.route('/profile/edit', methods=['GET', 'POST'])
@@ -1035,6 +1056,76 @@ def create_usage():
    
     flash('Blood usage record created successfully!', 'success')
     return redirect(url_for('hospital_dashboard'))
+
+@app.route('/hospital/donation/new')
+@login_required
+def new_donation():
+    if current_user.role != 'hospital':
+        flash('Access denied', 'error')
+        return redirect(url_for('dashboard'))
+   
+    donor_id = request.args.get('donor_id')
+    if not donor_id:
+        flash('Donor ID required', 'error')
+        return redirect(url_for('hospital_dashboard'))
+   
+    donor = User.query.get_or_404(donor_id)
+
+    # Optional: ensure donor is verified
+    if not donor.is_verified_donor:
+        flash('Donor is not verified for donation.', 'error')
+        return redirect(url_for('hospital_dashboard'))
+
+    donation_exists = Donation.query.filter_by(donor_id=donor.id, hospital_id=current_user.id).count() > 0
+    
+    from datetime import datetime
+    today = datetime.now().strftime('%Y-%m-%d')
+    now_time = datetime.now().strftime('%H:%M')
+
+    return render_template('donation_form.html',
+                           donor=donor,
+                           donation_exists=donation_exists,
+                           today=today,
+                           now_time=now_time)
+
+@app.route('/hospital/donation/create', methods=['POST'])
+@login_required
+def create_donation():
+    if current_user.role != 'hospital':
+        flash('Access denied', 'error')
+        return redirect(url_for('dashboard'))
+
+    donor_id = request.form.get('donor_id')
+    if not donor_id:
+        flash('Donor not found', 'error')
+        return redirect(url_for('hospital_dashboard'))
+
+    donation_units = request.form.get('donation_units', '').strip()
+    donation_type = request.form.get('donation_type', '').strip()
+    notes = request.form.get('notes', '').strip()
+    donation_date = request.form.get('donation_date')
+    donation_time = request.form.get('donation_time')
+
+    try:
+        donation_datetime = datetime.strptime(f"{donation_date} {donation_time}", "%Y-%m-%d %H:%M")
+    except (ValueError, TypeError):
+        flash('Invalid date or time', 'error')
+        return redirect(url_for('hospital_dashboard'))
+
+    donation = Donation(
+        donor_id=donor_id,
+        hospital_id=current_user.id,
+        donation_units=donation_units if donation_units else None,
+        donation_type=donation_type if donation_type else None,
+        notes=notes if notes else None,
+        date=donation_datetime
+    )
+    db.session.add(donation)
+    db.session.commit()
+
+    flash('Donation record created successfully!', 'success')
+    return redirect(url_for('hospital_dashboard'))
+
 @app.route('/api/chatbot', methods=['POST'])
 @login_required
 def chatbot_api():
@@ -1069,10 +1160,12 @@ def dashboard_stats():
 
         blood_usage_count = BloodUsage.query.filter_by(hospital_id=current_user.id).count()
         
+        donation_count = Donation.query.filter_by(hospital_id=current_user.id).count()
         return jsonify({
             'total_donors': total_donors,
             'pending_approvals': pending_approvals,
-            'blood_usage_count': blood_usage_count
+            'blood_usage_count': blood_usage_count,
+            'donation_count': donation_count
         })
     else:
         # Donor stats
@@ -1080,8 +1173,10 @@ def dashboard_stats():
         is_verified = current_user.is_verified_donor
         report_status = current_user.report_status
         
+        donation_count = Donation.query.filter_by(donor_id=current_user.id).count()
         return jsonify({
             'usage_count': usage_count,
+            'donation_count': donation_count,
             'is_verified': is_verified,
             'report_status': report_status
         })

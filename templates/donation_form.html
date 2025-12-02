@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+
+{% block title %}Record Donation - BloodLink{% endblock %}
+
+{% block content %}
+<div class="row">
+  <div class="col-12 col-lg-8 mx-auto">
+    <div class="card">
+      <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">
+          <i class="fas fa-hand-holding-medical me-2"></i>
+          Record Blood Donation
+        </h5>
+        <a href="{{ url_for('hospital_dashboard') }}" class="btn btn-light btn-sm">
+          <i class="fas fa-arrow-left me-1"></i> Back
+        </a>
+      </div>
+      <div class="card-body">
+        <div class="mb-3">
+          <strong>Donor:</strong> {{ donor.name }} ({{ donor.blood_group }})<br>
+          <strong>Location:</strong> {{ donor.city }}, {{ donor.state }}<br>
+          <strong>Contact:</strong> {{ donor.contact_number }}
+        </div>
+        <form action="{{ url_for('create_donation') }}" method="post">
+          <input type="hidden" name="donor_id" value="{{ donor.id }}">
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label">Donation Units</label>
+              <input type="text" class="form-control" name="donation_units" placeholder="e.g., 1, 0.5, 2 units">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Donation Type</label>
+              <select class="form-select" name="donation_type">
+                <option value="">Select type</option>
+                <option>Whole Blood</option>
+                <option>Plasma</option>
+                <option>Platelets</option>
+                <option>Double Red Cells</option>
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Date</label>
+              <input type="date" class="form-control" name="donation_date" value="{{ today }}" required>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Time</label>
+              <input type="time" class="form-control" name="donation_time" value="{{ now_time }}" required>
+            </div>
+            <div class="col-12">
+              <label class="form-label">Notes</label>
+              <textarea class="form-control" rows="3" name="notes" placeholder="Optional notes about the donation..."></textarea>
+            </div>
+          </div>
+          <div class="mt-4 d-flex gap-2">
+            <button type="submit" class="btn btn-primary">
+              <i class="fas fa-save me-1"></i> Save Donation
+            </button>
+            <a href="{{ url_for('hospital_dashboard') }}" class="btn btn-outline-secondary">
+              Cancel
+            </a>
+          </div>
+        </form>
+      </div>
+      {% if donation_exists %}
+      <div class="card-footer">
+        <small class="text-muted"><i class="fas fa-info-circle me-1"></i> This donor already has donation records with your hospital.</small>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}
