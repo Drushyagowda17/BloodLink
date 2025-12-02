@@ -53,6 +53,15 @@
         <div class="col-md-3">
             <div class="card border-0 shadow-sm h-100 bg-gradient-info">
                 <div class="card-body text-center">
+                    <i class="fas fa-hand-holding-medical fa-2x text-info mb-3"></i>
+                    <h3 class="fw-bold text-dark">{{ current_user.donations|length if current_user.donations is defined else 0 }}</h3>
+                    <p class="text-muted mb-0">Donation Records</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm h-100 bg-gradient-info">
+                <div class="card-body text-center">
                     <i class="fas fa-vial fa-2x text-info mb-3"></i>
                     <h3 class="fw-bold text-dark">{{ blood_groups|length }}</h3>
                     <p class="text-muted mb-0">Blood Groups</p>
@@ -167,7 +176,7 @@
                                 <th class="fw-bold">Age / Gender</th>
                                 <th class="fw-bold">Location</th>
                                 <th class="fw-bold">Contact</th>
-                                <th class="fw-bold">Blood Usage</th>
+                                <th class="fw-bold">Records</th>
                                 <th class="fw-bold">Actions</th>
                             </tr>
                         </thead>
@@ -203,15 +212,20 @@
                                     {% endif %}
                                 </td>
                                 <td>
-                                    {% set donor_usages = usage_records|selectattr("donor_id", "==", donor.id)|list %}
-                                    {% if donor_usages %}
-                                        <div class="badge bg-success mb-2">{{ donor_usages|length }} Record(s)</div>
-                                        <button class="btn btn-sm btn-outline-info" data-bs-toggle="collapse" data-bs-target="#usage{{ donor.id }}">
-                                            <i class="fas fa-history me-1"></i>View
-                                        </button>
-                                    {% else %}
-                                        <span class="text-muted">No usage yet</span>
-                                    {% endif %}
+                                    {% set donor_usages = usage_records|selectattr('donor_id', '==', donor.id)|list %}
+                                    {% set donor_donations = current_user.donations|selectattr('donor_id', '==', donor.id)|list if current_user.donations is defined else [] %}
+                                    <div class="d-flex flex-column gap-1">
+                                        <span class="badge bg-success">Usage: {{ donor_usages|length }}</span>
+                                        <span class="badge bg-primary">Donations: {{ donor_donations|length }}</span>
+                                        <div class="d-flex gap-1 mt-1">
+                                            <button class="btn btn-sm btn-outline-success" data-bs-toggle="collapse" data-bs-target="#usage{{ donor.id }}">
+                                                <i class="fas fa-history me-1"></i>View Usage
+                                            </button>
+                                            <button class="btn btn-sm btn-outline-primary" data-bs-toggle="collapse" data-bs-target="#donations{{ donor.id }}">
+                                                <i class="fas fa-hand-holding-medical me-1"></i>View Donations
+                                            </button>
+                                        </div>
+                                    </div>
                                 </td>
                                 <td>
                                     <a href="{{ url_for('new_usage', donor_id=donor.id) }}" class="btn btn-sm btn-success">
@@ -220,17 +234,18 @@
                                 </td>
                             </tr>
                             <!-- Blood Usage History Row -->
-                            {% set donor_usages = usage_records|selectattr("donor_id", "==", donor.id)|list %}
-                            {% if donor_usages %}
+                            {% set donor_usages = usage_records|selectattr('donor_id', '==', donor.id)|list %}
                             <tr>
                                 <td colspan="7">
                                     <div class="collapse" id="usage{{ donor.id }}">
                                         <div class="p-4 bg-light rounded">
                                             <h6 class="text-primary mb-3"><i class="fas fa-history me-2"></i>Blood Usage History</h6>
+                                            {% if donor_usages %}
                                             <div class="table-responsive">
                                                 <table class="table table-sm table-bordered">
                                                     <thead class="table-light">
                                                         <tr>
+                                                            <th>Record Type</th>
                                                             <th>Date & Time</th>
                                                             <th>Units</th>
                                                             <th>Type</th>
@@ -240,6 +255,7 @@
                                                     <tbody>
                                                         {% for record in donor_usages %}
                                                         <tr>
+                                                            <td><span class="badge bg-success">Usage</span></td>
                                                             <td><small>{{ record.date.strftime('%d %b %Y, %I:%M %p') }}</small></td>
                                                             <td><strong>{{ record.blood_units|default('—') }}</strong></td>
                                                             <td>{{ record.usage_type|default('—') }}</td>
@@ -249,11 +265,53 @@
                                                     </tbody>
                                                 </table>
                                             </div>
+                                            {% else %}
+                                                <div class="text-muted">No usage records yet.</div>
+                                            {% endif %}
                                         </div>
                                     </div>
                                 </td>
                             </tr>
-                            {% endif %}
+
+                            <!-- Blood Donations History Row -->
+                            {% set donor_donations = current_user.donations|selectattr('donor_id', '==', donor.id)|list if current_user.donations is defined else [] %}
+                            <tr>
+                                <td colspan="7">
+                                    <div class="collapse" id="donations{{ donor.id }}">
+                                        <div class="p-4 bg-light rounded">
+                                            <h6 class="text-primary mb-3"><i class="fas fa-hand-holding-medical me-2"></i>Blood Donations History</h6>
+                                            {% if donor_donations %}
+                                            <div class="table-responsive">
+                                                <table class="table table-sm table-bordered">
+                                                    <thead class="table-light">
+                                                        <tr>
+                                                            <th>Record Type</th>
+                                                            <th>Date & Time</th>
+                                                            <th>Units</th>
+                                                            <th>Type</th>
+                                                            <th>Notes</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        {% for record in donor_donations %}
+                                                        <tr>
+                                                            <td><span class="badge bg-primary">Donation</span></td>
+                                                            <td><small>{{ record.date.strftime('%d %b %Y, %I:%M %p') }}</small></td>
+                                                            <td><strong>{{ record.donation_units|default('—') }}</strong></td>
+                                                            <td>{{ record.donation_type|default('—') }}</td>
+                                                            <td><small class="text-muted">{{ record.notes|default('No notes') }}</small></td>
+                                                        </tr>
+                                                        {% endfor %}
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                            {% else %}
+                                                <div class="text-muted">No donation records yet.</div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
                             {% endfor %}
                         </tbody>
                     </table>
